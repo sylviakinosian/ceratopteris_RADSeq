@@ -1,0 +1,20 @@
+title: "*Pteridium* GBS Pipeline"
+author: "Sylvia Kinosian"
+output: html_document
+---
+
+Hello world!
+
+###**3) Alignment of parsed reads and variant calling**
+
+###Step 1: Prepare the reference sequence
+
+####a. Index the reference (consensus) sequence. 
+
+Here, we used the Burrow-Wheeler Aligner (BWA v. 0.7.10) to index our reference genome. This give the squence position points for the alignment later on.
+
+```{bash eval=FALSE}
+bwa index fern.racon.fasta 
+```
+
+
