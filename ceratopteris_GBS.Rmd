@@ -5,6 +5,10 @@ output: html_document
 
 Hello world!
 
+#{.tabset}
+
+## Pipeline
+
 ###**3) Alignment of parsed reads and variant calling**
 
 ###Step 1: Prepare the reference sequence
@@ -16,5 +20,28 @@ Here, we used the Burrow-Wheeler Aligner (BWA v. 0.7.10) to index our reference 
 ```{bash eval=FALSE}
 bwa index fern.racon.fasta 
 ```
+
+##Program Versions
+
+Below is a list of all program versions used in this analysis. Please note that newer versions of these software packages *may* work for this pipeline, but be aware that usage often changes with new verions. 
+
+[Perl 5](https://www.perl.org/)
+
+[Python 2.7.13](https://www.python.org/downloads/release/python-2713/)
+
+[SAMtools v. 1.5](https://sourceforge.net/projects/samtools/files/samtools/1.5/)
+
+[SEQTK 1.2-r102-dirty](https://github.com/lh3/seqtk)
+
+[VSEARCH 2.4.2](https://github.com/torognes/vsearch)
+
+[BWA 0.7.15](https://sourceforge.net/projects/bio-bwa/files/)
+
+[PicardTools 2.9.0](https://github.com/broadinstitute/picard/releases)
+
+[GATK v.3.8.0](https://software.broadinstitute.org/gatk/download/archive) - [HaplotypeCaller](https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php)
+
+[ENTROPY & ESTPOST](https://github.com/sylviakinosian/Pteridium_GBS_Pipeline/tree/master/entropy)
+
 
 
