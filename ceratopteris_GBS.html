@@ -380,34 +380,92 @@ $(document).ready(function () {
 </div>
 
 
-<p>#{.tabset}</p>
-<p>##Demultiplexing</p>
-<p>This first part uses Perl scripts to parse the barcodes from the raw GBS .FASTQ data and then split that raw file into indiviual .FASTQ files. Note that all Perl were run using Perl 5 (<a href="http://www.perl.org" class="uri">http://www.perl.org</a>).</p>
-<p>###Step 1: Parse barcodes The first scipt, parse_barcodes768.pl, requires two files: a barcodes file and the raw FASTQ file. The barcodes.txt file has three columns: the index name, barcode, and sample name for each indiviual. See barcodes.txt for an example.</p>
+<p>This pipeline was developed by Zach Gompert, and edited by Sylvia Kinosian. All data analysis except the data visualization were run on the University of Utah <a href="https://www.chpc.utah.edu/">Center for High Performance Computing</a>. This or a similar computing cluster is required for this pipeline. Data visualization was performed in R (v. 3.5.2) on Ubuntu 19.04.</p>
+<div id="section" class="section level1 tabset">
+<h1></h1>
+<div id="demultiplexing" class="section level2">
+<h2>Demultiplexing</h2>
+<p>This first part uses <a href="http://www.perl.org">Perl 5</a> scripts to parse the barcodes from the raw FASTQ files, and then split that raw file into FASTQ files for each individual.</p>
+<p>Please keep in mind that steps 1 &amp; 2 can take several days to run; plan accordinly.</p>
+<div id="step-1-parse-barcodes" class="section level3">
+<h3>Step 1: Parse barcodes</h3>
+<p>The first script, <strong>parse_barcodes768.pl</strong>, requires two files: a barcodes file and the raw FASTQ file. The <strong>barcodes.txt</strong> file has three columns: the index name, barcode, and sample name for each indiviual. See barcodes.txt for an example.</p>
 <p>Since we have paired-end reads, we have to run this step twice: once for the forward, and once for the reverse. After splitting out the individuals, we will combine the forward and reverse reads.</p>
-<pre class="bash"><code>parse_barcodes768.pl barcodes_forward.txt rawR1.fastq
+<pre class="bash"><code>perl parse_barcodes768.pl barcodes_forward.txt rawR1.fastq
 
-parse_barcodes768.pl barcodes_reverse.txt rawR2.fastq</code></pre>
-<p>###Step 2: Split FASTQ by individual The next script, splitFastq_ms.pl, requires two files: a list of individuals and the parsed.FASTQ file (one of the output file from parse_barcodes768.pl). The individuals.txt file is simply a list of the names for each individual you would like to create a FASTQ file for. This individuals file is a text file contain one column, with one name per row, no header.</p>
-<pre class="bash"><code>splitFastq_ms.pl individuals_forward.txt parsed_rawR1.fastq
+perl parse_barcodes768.pl barcodes_reverse.txt rawR2.fastq</code></pre>
+</div>
+<div id="step-2-split-fastq-by-individual" class="section level3">
+<h3>Step 2: Split FASTQ by individual</h3>
+<p>The next script, <strong>splitFastq_ms.pl</strong>, requires two files: a list of individuals and the parsed.FASTQ file (one of the output file from <strong>parse_barcodes768.pl</strong>). The <strong>individuals.txt</strong> file is simply a list of the names for each individual you would like to create a FASTQ file for. This individuals file is a text file contain one column, with one name per row, no header.</p>
+<pre class="bash"><code>perl splitFastq_ms.pl individuals_forward.txt parsed_rawR1.fastq
 
-splitFastq_ms.pl individuals_reverse.txt parsed_rawR2.fastq</code></pre>
-<p>Now, you should have a two.FASTQ files for each individual: one for forward and one for reverse reads.</p>
-<p>###Step 3: Combine paired-end reads</p>
+perl splitFastq_ms.pl individuals_reverse.txt parsed_rawR2.fastq</code></pre>
+<p>Now, you should have a two FASTQ files for each individual: one for forward and one for reverse reads.</p>
+</div>
+<div id="step-3-combine-paired-end-reads" class="section level3">
+<h3>Step 3: Combine paired-end reads</h3>
+<p>To combine our paired-end reads, we used the program PEAR: Paired-End reAd mergeR (v. 0.9.11). Please see the script <strong>pear.sh</strong> for our exact usage.</p>
+<pre class="bash"><code>./pear -f forward_read.fastq -r reverse_read.fastq -o outfile_name</code></pre>
+</div>
+</div>
 <div id="reference-genome-prep" class="section level2">
 <h2>Reference genome prep</h2>
-<p>###Step 1: Index the reference genome.</p>
-<p>Here, we used the Burrow-Wheeler Aligner (BWA v. 0.7.10) to index our reference genome. This give the squence position points for the alignment later on.</p>
+<div id="step-1-index-the-reference-genome." class="section level3">
+<h3>Step 1: Index the reference genome.</h3>
+<p>Here, we used the Burrows-Wheeler Aligner (BWA v. 0.7.10) to index our reference genome. This give the squence position points for the alignment later on.</p>
 <pre class="bash"><code>bwa index fern.racon.fasta </code></pre>
-<p>###Step 2: Create a sequence dictionary</p>
+</div>
+<div id="step-2-create-a-sequence-dictionary" class="section level3">
+<h3>Step 2: Create a sequence dictionary</h3>
 <p>We used Java (OpenJDK) v. 1.8.0 and PicardTools v. 2.9.0</p>
 <pre class="bash"><code>java -jar picard.jar CreateSequenceDictionary REFERENCE=fern.racon.fasta OUTPUT=fern.racon.dict</code></pre>
-<p>###Step 3: Create the fasta index file</p>
+</div>
+<div id="step-3-create-the-fasta-index-file" class="section level3">
+<h3>Step 3: Create the fasta index file</h3>
 <p>We used SAMTOOLS v. 1.5</p>
 <pre class="bash"><code>samtools faidx fern.racon.fasta</code></pre>
-<p>##Align reads to reference genome</p>
-<p>##ENTROPY analysis and visualization</p>
-<p>###<strong>Entropy</strong></p>
+<p>Now you should have the following files:</p>
+<p>consensus.dict<br> consensus.fasta<br> consensus.amb<br> consensus.ann<br> consensus.bwt<br> consensus.fai<br> consensus.pac<br> consensus.sa<br></p>
+</div>
+</div>
+<div id="align-reads-to-reference-genome" class="section level2">
+<h2>Align reads to reference genome</h2>
+<p>We used the ALN and SAMSE functions of BWA (0.7.10) to align the individuals to the reference genome. The output is a .SAM file for each individual</p>
+<p>See script <code>bwa_aln.sh</code></p>
+<p>MEM?</p>
+<pre class="bash"><code>bwa mem -t 10 -w 50 -k 20 -a -C -R &quot;@RG\tID:$ids\tLB:$ids\tSM:$ids\tPL:ILLUMINA&quot; consensus.fasta ind.fastq &gt; out.sam</code></pre>
+<p><strong>-t</strong> number of threads<br> <strong>-k</strong> Maximum seed length<br> <strong>-w</strong> Band width; gaps longer than INT will not be found. Note that the maximum gap length is also affected by the scoring matrix and the hit length, not solely determined by this option.<br> <strong>-a</strong> Output all found alignments for single-end or unpaired paired-end reads. These alignments will be flagged as secondary alignments.<br> <strong>-C</strong> Append append FASTA/Q comment to SAM output<br> <strong>-R</strong> Complete read group header line.<br></p>
+<p>All other flag values are default.</p>
+<pre class="bash"><code>bwa aln -n 4 -l 20 -k 2 -t 8 -q 10 $ids.sai $REF $i
+
+bwa samse -n 1 -r &quot;@RG\tID:$ids\tLB:$ids\tSM:$ids\tPL:ILLUMINA&quot; $ids.sam .fastq $ids.sai $i</code></pre>
+<p>BWA <a href="http://bio-bwa.sourceforge.net/bwa.shtml">documentation</a>.</p>
+<p>Flags for ALN:</p>
+<p>-n: Maximum edit distance if the value is INT, or the fraction of missing alignments given 2% uniform base error rate if FLOAT.<br> -l: Take the first INT subsequence as seed. If INT is larger than the query sequence, seeding will be disabled. For long reads, this option is typically ranged from 25 to 35 for ‘-k 2’.<br> -k: Maximum edit distance in the seed. <br> -t: Number of threads. <br> -q: Parameter for read trimming. BWA trims a read down to argmax_x{\sum_{i=x+1}^l(INT-q_i)} if q_l&lt;INT where l is the original read length.<br></p>
+<p>Flags for SAMSE:</p>
+<p>-n: Maximum number of alignments to output in the XA tag for reads paired properly. If a read has more than INT hits, the XA tag will not be written. -r: Specify the read group; unqiue for a sequencing platform.</p>
+<div id="b.-convert-files-from-.sam-to-.bam-sort-and-index-the-individuals-using-samtools" class="section level4">
+<h4>b. Convert files from .SAM to .BAM, sort, and index the individuals using SAMTOOLS</h4>
+<pre class="bash"><code>samtools view -o *.bam *.sam
+
+samtools sort -o *.sorted.bam *.bam
+ 
+samtools index -b *.sorted.bam</code></pre>
+</div>
+<div id="step-3-call-variants" class="section level3">
+<h3>Step 3: Call Variants</h3>
+<div id="step-3a.-process-all-individuals-as-diploid" class="section level4">
+<h4>Step 3a. Process all individuals as diploid</h4>
+<pre class="bash"><code>java -Xmx48g -jar GenomeAnaysisTK.jar -T HaplotypeCaller -R ei_cons.fasta -I bams.list --genotyping_mode DISCOVERY -ploidy 2 -o ice_rawVar.vcf -out_mode EMIT_VARIANTS_ONLY</code></pre>
+<pre class="bash"><code>java -Xmx48g -jar GenomeAnaysisTK.jar -T HaplotypeCaller -R gl_cons.fasta -I bams.list --genotyping_mode DISCOVERY -ploidy 2 -o glc_rawVar.vcf -out_mode EMIT_VARIANTS_ONLY</code></pre>
+</div>
+</div>
+</div>
+<div id="entropy-analysis-and-visualization" class="section level2">
+<h2>ENTROPY analysis and visualization</h2>
+<div id="entropy" class="section level3">
+<h3><strong>Entropy</strong></h3>
 <p>Before getting started with Entopry, we need to convert our VCF file to a GL (Genotype Likelihood) file.</p>
 <p>We used the perl script vcf2gl.pl to convert our filtered vcf to the simpler .gl format for downstream analysis.</p>
 <p>For diploids:</p>
@@ -416,9 +474,12 @@ splitFastq_ms.pl individuals_reverse.txt parsed_rawR2.fastq</code></pre>
 <p>Next we are going to convert the GL file to a matrix that we can use in R with DAPC.</p>
 <pre class="bash"><code>perl gl2genest.pl out.recode.gl</code></pre>
 <p>This outputs a file called pntest_out.recode.gl</p>
-<p>###Discriminant Analysis of Principle Components</p>
+</div>
+<div id="discriminant-analysis-of-principle-components" class="section level3">
+<h3>Discriminant Analysis of Principle Components</h3>
 <p>Among the diploid species, <em>Pteridium aquilinum</em> and <em>P. esculentum</em>, and the tetraploid species, <em>P. semihaustatum</em> and <em>P. caudatum</em>, there are 15 sub-species. These distinctions are based mostly on morphology, and so testing the population structure among them will help distinguish the validity of these biological species and sub-species.</p>
-<p>#####a. seed entropy with values from DAPC</p>
+<div id="a.-seed-entropy-with-values-from-dapc" class="section level5">
+<h5>a. seed entropy with values from DAPC</h5>
 <p>Using the R package ADEGENET (v. 2.1.1), run a Discriminate Analysis of Principle Componets (DAPC function) to seed values in ENTROPY so we don’t get label swapping. We followed the <a href="adegenet.r-forge.r-project.org/files/tutorial-dapc.pdf">DAPC vignette</a>.</p>
 <pre class="r"><code>library(adegenet)
 
@@ -497,9 +558,14 @@ plot_q_per_chain &lt;- function(kqlist, xlabel, ...){
 }
 
 plot_q_per_chain(k2list, df2[,3], 2)</code></pre>
-<p>##Program Versions</p>
-<p>Below is a list of all program versions used in this analysis. Please note that newer versions of these software packages <em>may</em> work for this pipeline, but be aware that usage often changes with new verions.</p>
+</div>
+</div>
+</div>
+<div id="program-versions" class="section level2">
+<h2>Program Versions</h2>
+<p>Below is a list of all program versions used in this analysis. <strong>Please note</strong> that newer versions of these software packages <em>may</em> work for this pipeline, but be aware that usage often changes with new verions.</p>
 <p><a href="https://www.perl.org/">Perl 5</a></p>
+<p><a href="https://cme.h-its.org/exelixis/web/software/pear/index.html">Pear 0.9.11</a></p>
 <p><a href="https://www.python.org/downloads/release/python-2713/">Python 2.7.13</a></p>
 <p><a href="https://sourceforge.net/projects/samtools/files/samtools/1.5/">SAMtools v. 1.5</a></p>
 <p><a href="https://github.com/lh3/seqtk">SEQTK 1.2-r102-dirty</a></p>
@@ -508,6 +574,8 @@ plot_q_per_chain(k2list, df2[,3], 2)</code></pre>
 <p><a href="https://github.com/broadinstitute/picard/releases">PicardTools 2.9.0</a></p>
 <p><a href="https://software.broadinstitute.org/gatk/download/archive">GATK v.3.8.0</a> - <a href="https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php">HaplotypeCaller</a></p>
 <p><a href="https://github.com/sylviakinosian/Pteridium_GBS_Pipeline/tree/master/entropy">ENTROPY &amp; ESTPOST</a></p>
+<p><a href="https://www.r-project.org/">R v. 3.5.2</a></p>
+</div>
 </div>
 
 
