@@ -1,0 +1,358 @@
+---
+title: "*Ceratopteris* ddRADSeq data analysis"
+author: "Sylvia Kinosian"
+output: html_document
+---
+
+All data analysis except the data visualization were run on the University of Utah [Center for High Performance Computing](https://www.chpc.utah.edu/). This or a similar computing cluster is required for this pipeline. Data visualization was performed in R (v. 3.5.2) on Ubuntu 19.04.
+
+# {.tabset}
+
+## Demultiplexing
+
+### STACKS
+Tests to see how reads are pairing; not easy in ipyrad
+
+stacks (v. 2.4) process\_radtags pipeline
+
+```{bash eval=FALSE}
+process_radtags -P -p /media/kaiser/skinosian/ceratopteris/raw/ -o ./fastqs/ -b barcodes.txt -c -q -r --index_index --renz_1 pstI --renz_2 bfaI
+```
+
+#### Parameter Descriptions
+
+**-p**: path to input files
+<br>
+**-P**, --paired: paired-end reads
+<br>
+**-o**: path to output files
+<br>
+**-b**: path to barcodes
+<br>
+**-c, --clean**: clean data, remove any read with an uncalled base
+<br>
+**-q, --quality**: discard reads with low quality scores (< 20)
+<br>
+**-r, -rescue**: rescue barcodes and RAD-Tags
+<br>
+**--index\_index:** Paired-end with index barcodes on the single and paired-ends
+<br>
+**--renz\_1**, **--renz\_2:** double-digest restiction enzymes
+
+### PEAR
+
+Paired-end Read Merger (v. 0.9.11)
+
+```{bash eval=FALSE}
+pear -f -r -o
+```
+
+
+## ipyrad
+
+```{bash eval=FALSE}
+ipyrad -p params-cer1.txt 1234567
+```
+
+```{bash eval=FALSE}
+------- ipyrad params file (v.0.7.30)-------------------------------------------
+cer1                           ## [0] [assembly_name]: Assembly name. Used to name output directories
+./                             ## [1] [project_dir]: Project dir (made in curdir if not present)
+./rawData/*.fastq.gz           ## [2] [raw_fastq_path]: Location of raw non-demultiplexed fastq files
+./all_bc.txt                   ## [3] [barcodes_path]: Location of barcodes file
+                               ## [4] [sorted_fastq_path]: Location of demultiplexed/sorted fastq files
+denovo                         ## [5] [assembly_method]: Assembly method 
+                               ## [6] [reference_sequence]: Location of reference sequence file
+pairddrad                      ## [7] [datatype]: Datatype (see docs): rad, gbs, ddrad, etc.
+TGCAG, TAG                     ## [8] [restriction_overhang]: Restriction overhang (cut1,) or (cut1, cut2)
+5                              ## [9] [max_low_qual_bases]: Max low quality base calls (Q<20) in a read
+33                             ## [10] [phred_Qscore_offset]: phred Q score offset (33 is default)
+6                              ## [11] [mindepth_statistical]: Min depth for statistical base calling
+6                              ## [12] [mindepth_majrule]: Min depth for majority-rule base calling
+10000                          ## [13] [maxdepth]: Max cluster depth within samples
+0.90                           ## [14] [clust_threshold]: Clustering threshold for de novo assembly
+0                              ## [15] [max_barcode_mismatch]: Max number of allowable mismatches in barcodes
+2                              ## [16] [filter_adapters]: Filter for adapters/primers (1 or 2=stricter)
+35                             ## [17] [filter_min_trim_len]: Min length of reads after adapter trim
+2                              ## [18] [max_alleles_consens]: Max alleles per site in consensus sequences
+5, 5                           ## [19] [max_Ns_consens]: Max N's (uncalled bases) in consensus (R1, R2)
+8, 8                           ## [20] [max_Hs_consens]: Max Hs (heterozygotes) in consensus (R1, R2)
+48                             ## [21] [min_samples_locus]: Min # samples per locus for output
+20, 20                         ## [22] [max_SNPs_locus]: Max # SNPs per locus (R1, R2)
+8, 8                           ## [23] [max_Indels_locus]: Max # of indels per locus (R1, R2)
+0.5                            ## [24] [max_shared_Hs_locus]: Max # heterozygous sites per locus (R1, R2)
+0, 0, 0, 0                     ## [25] [trim_reads]: Trim raw read edges (R1>, <R1, R2>, <R2) (see docs)
+0, 0, 0, 0                     ## [26] [trim_loci]: Trim locus edges (see docs) (R1>, <R1, R2>, <R2)
+*                              ## [27] [output_formats]: Output formats (see docs)
+                               ## [28] [pop_assign_file]: Path to population assignment file
+```
+
+#### Parameter Descriptions
+
+Full documentation for all ipyrad parameters can be found [here](https://ipyrad.readthedocs.io/parameters.html). Below are descriptions of a few key parameters that we chose in our analysis.
+
+[#5](https://ipyrad.readthedocs.io/parameters.html#assembly-method) **Assemby Method** - Since the current version of the *Ceratopteris* genome is relatively low coverage and low quality, we decided to use the *de novo* assembly option for our ddRAD data. ipyrad offers four different assembly methods; for the [denovo method](https://ipyrad.readthedocs.io/methods.html#assembly-methods), raw sequences are assembled without a reference; homology is inferred using [vsearch](https://github.com/torognes/vsearch)  <br>
+[#8](https://ipyrad.readthedocs.io/parameters.html#restriction-overhang) **Restriction Overhang** - We used the enzymes PstI and BfaI for our library preparation. [PstI](https://en.wikipedia.org/wiki/PstI) cuts at the 3' end, so you need to reverse compliment of the overhang: TGCAG. [BfaI](https://www.neb.com/products/R0568-BfaI#FAQs%20&%20Troubleshooting) cuts at the 5' end, so is simply: TAG.
+<br>
+[#16](https://ipyrad.readthedocs.io/parameters.html#filter-adapters) **Filter Adaptors** - We chose the most strict filtering option here, to remove not only barcodes, but Illumina and cutsite adaptors as well. During Step #2, reads are searched for the common Illumina adapter, plus the reverse complement of the second cut site (if present), plus the barcode (if present), and this part of the read is trimmed. 
+<br>
+[#21](https://ipyrad.readthedocs.io/parameters.html#min-samples-locus) **Min Samples per Locus** - This parameter sets the minimum number of samples that must have data for a given locus in the final data output. We chose to go with a relatively high number of minimum samples - 48 or half of the total samples. We wanted our final output file to have data from a at least half (if not a majority) of our individuals.
+
+#### Analysis of raw reads & loci
+
+```{r eval=TRUE}
+d <- read.csv("./structure/reads.raw.txt", sep = ',', header = T)
+
+hist(d[,2], main = "raw reads", xlab = "number of reads", breaks = 20)
+hist(d[,3], main = "number of loci in assembly", xlab = "number of loci", breaks = 20)
+```
+
+## Population genetic analysis
+
+#### STRUCTURE
+
+The population genetics analysis program STRUCTURE (v. 2.3.4) was used to identify populations within the genus. For each k value, we ran 50 replicates (NOTE: include params files in github).
+
+We used the [Cluster Markov Packager Across K (CLUMMPAK)](http://clumpak.tau.ac.il/) to combine replicates within k values.
+
+Visualization of STRUCTURE was done in R with a custom script.
+
+```{r eval=FALSE}
+# load in ks from clummpack files
+k2 <- read.csv("clummpack/K=2/CLUMPP.files/ClumppIndFile.output", sep = '', header = F)
+e2 <- k2[,-(1:5)]
+k3 <- read.csv("clummpack/K=3/CLUMPP.files/ClumppIndFile.output", sep = '', header = F)
+k3 <- k3[,-(1:5)]
+k4 <- read.csv("clummpack/K=4/CLUMPP.files/ClumppIndFile.output", sep = '', header = F)
+k4 <- k4[,-(1:5)]
+k5 <- read.csv("clummpack/K=5/CLUMPP.files/ClumppIndFile.output", sep = '', header = F)
+k5 <- k5[,-(1:5)]
+k6 <- read.csv("clummpack/K=6/CLUMPP.files/ClumppIndFile.output", sep = '', header = F)
+k6 <- k6[,-(1:5)]
+k7 <- read.csv("clummpack/K=7/CLUMPP.files/ClumppIndFile.output", sep = '', header = F)
+k7 <- k7[,-(1:5)]
+
+# names file includes individual ids, species names, and geographic locations
+names <- read.csv("names.csv", sep = ',', header = T)
+
+klist <- list()
+
+structure_plot(names, ninds = 67, klist)
+
+#######################################################
+# functions needed
+######################################################
+
+# plotting and labeling function
+structure_plot <- function(names, ninds, klist){
+	# define colors
+	cols <- c('#A8FFFD', '#B862D3','#A39D9D','#FFFF00', '#ff5a5a', '#69C261', '#26CDCD', '#C1C6FF')
+	# unique label names
+	sp.names <- as.character(unique(names))
+	# locations of each column
+	b <- as.data.frame(matrix(ncol = 1, nrow = ninds))
+	b[,1] <- barplot(t(k4list[[1]][1]), beside= F, col= cols, cex.name= 1, cex.axis= 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
+	# find locations for labels in the barplot
+	my.mean <- tapply(X = b[,1], INDEX = n[,2], mean)
+	my.min <- tapply(X = b[,1], INDEX = names, min)
+	my.max <- tapply(X = b[,1], INDEX = names, max)
+	# data frame for plotting
+	d <- sp.labels(sp.names, my.min, my.mean, my.max)
+	# plot
+	plot_q_per_chain(k4list)
+	# lines
+	for (i in 1:length(d[,1])){
+		lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
+	}
+}
+
+# create labels
+sp.labels <- function(names, min, mean, max, ...){
+	d <- as.data.frame(matrix(nrow = length(names), ncol = 4))
+	for (j in 1:length(names)){
+			d[j,1] <- names[j]
+			d[j,3] <- min[[j]][1]
+			d[j,2] <- mean[[j]][1]
+			d[j,4] <- max[[j]][1]
+	}
+	return(d)
+}
+
+# plot chains with species and geography labels 
+plot_q_per_chain <- function(kqlist, ...){
+	cols <- c('#a8fffd', '#b862d3','#a39d9d','#ffff00', '#ff5a5a', '#69c261', '#26cdcd', '#c1c6ff') 	
+	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
+	chain <- seq(1, length(kqlist), 1) 
+	for(i in 1:length(kqlist)){
+		barplot(t(kqlist[[i]]), beside= F, col= cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = paste("str", chain[i], sep = ' '), cex.lab = 1.2, cex.main = 1.6)
+		# y axis
+		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
+ 	}
+	# x axis, rotating labels
+	# species labels
+	text(cex = 1.5, x = (d[,2]-0.3), y = -0.7, labels = d[,1], xpd=NA, srt=50, font=3)
+	# location labels (make new df for this one?)
+	#text(cex = 1.7, x = (e[,3]-4), y = -0.9, labels = e[,1], xpd=na, srt=50, font=3)
+
+}
+
+
+#######################################################
+
+plot_q_per_chain(k4list)
+
+for (i in 1:length(d[,1])){
+	lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
+}
+
+
+# k7, continent names
+
+k7list.c <- list(k7.c[,1:7])
+cont.names <- as.character(unique(k7.c[,9]))
+
+b <- as.data.frame(matrix(ncol = 1, nrow = 89))
+b[,1] <- barplot(t(k7list.c[[1]]), beside= F, col= cols, cex.name= 1, cex.axis= 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
+
+my.mean <- tapply(X = b[,1], INDEX = k7.c[,9], mean)
+my.min <- tapply(X = b[,1], INDEX = k7.c[,9], min)
+my.max <- tapply(X = b[,1], INDEX = k7.c[,9], max)
+
+d <- sp.labels(cont.names, my.min, my.mean, my.max)
+
+plot_q_per_chain(k7list.c)
+
+for (i in 1:length(d[,1])){
+	lines(x = d[i,3:4] , y = rep(-0.05, 2), lwd = 2.5, col = "black", xpd = NA)
+}
+
+# for k=5 only
+#plot_q_per_chain <- function(kqlist, ...){
+#	cols <- c('#A8FFFD', '#B862D3','#A39D9D','#FFFF00', '#ff5a5a', '#69C261', '#26CDCD', '#C1C6FF') 	
+#	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
+#	chain <- seq(1, length(kqlist), 1) 
+#	for(i in 1:length(kqlist)){
+#		barplot(t(kqlist[[i]]), beside= F, col= cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = "k = 5", cex.lab = 1.2, cex.main = 1.6)
+#		# y axis
+#		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
+# 	}
+#	# x axis, rotating labels
+#	text(cex = 1.7, x = (d[,2]-4), y = -0.4, labels = d[,1], xpd=NA, srt=50, font=3)
+#}
+#
+#plot_q_per_chain(k5List)
+#
+#for (i in 1:length(d[,1])){
+#	lines(x = d[i,3:4] , y = rep(-0.05, 2), lwd = 2.5, col = "black", xpd = NA)
+#}
+
+```
+
+#### Tetrad
+
+ipyrad inferring quartet trees with [tetrad](https://nbviewer.jupyter.org/github/dereneaton/ipyrad/blob/master/tests/cookbook-quartet-species-tree.ipynb)
+
+Command line, on a server
+```{bash eval=FALSE}
+# start an interactive job
+srun -t 24:00:00 -n 24 -N 1 -A usubio-kp -p usubio-kp --pty /bin/bash -l
+
+# start ipcluster
+ipcluster start --n=24 --daemonize
+```
+
+Python
+```{perl eval=FALSE}
+import ipyrad.analysis as ipa
+import ipyparallel as ipp
+import toytree
+
+ipyclient = ipp.Client()
+print("connected to {} cores".format(len(ipyclient)))
+# connected to 24 cores
+
+tet = ipa.tetrad(
+	name="cer",
+	seqfile="./cer_F.snps.phy",
+	mapfile="./cer_F.snps.map",
+	nboots=100,
+	)
+
+# loading seq array [48 taxa x 16866 bp]
+# max unlinked SNPs per quartet (nloci): 4491
+
+tet.run(ipyclient=ipyclient)
+# host comput node: [24 cores] on kp382
+# inferring 3321960 induced quartet trees
+# [####################] 100%  initial tree | 0:00:33 |
+# [####################] 100%  boot 100     | 0:47:22 |
+```
+
+Plotting
+```{r eval=FALSE}
+library(ape)
+library(phytools)
+
+t <- read.tree(file.choose("cer.tree"))
+# Enter file name: cer.tree
+
+t
+# Phylogenetic tree with 48 tips and 47 internal nodes.
+
+#Tip labels:
+#	Pt03_R2_, Pt04_R2_, Pt02_R1_, Pt05_R1_, Pt06_R2_, Pt01_R2_, ...
+
+#Rooted; no branch lengths.
+
+plot(t, cex = 0.8)
+```
+
+#### gbs2ploidy
+
+I converted the VCF file output by ipyrad to the gbs2ploidy format with this [Python script](https://github.com/carol-rowe666/vcf2hetAlleleDepth) written by Carol Rowe.
+
+```{r eval=FALSE}
+library(gbs2ploidy)
+
+ids <- read.csv("./HAD_ID.csv")
+het <- as.matrix(read.table("./hetAlleleDepth.txt", header = F))
+
+a <- seq(1, 134, 2)
+b <- seq(2, 134, 2)
+
+cov1 <- het[,a]
+cov2 <- het[,b]
+
+propOut <- estprops(cov1 = cov1, cov2 = cov2, props = c(0.25, 0.33, 0.5, 0.66, 0.75), mcmc.nchain = 3, mcmc.steps = 10000, mcmc.burnin = 1000, mcmc.thin = 5)
+
+dev.new()
+par(mfrow = c(3, 3))
+
+for(i in 1:67){
+  plot( propOut[[i]][,3], ylim = c(0,1), axes = FALSE, xlab = "ratios", ylab = "proportions")
+  axis( 1, at = 1:5, c("1:3", "1:2", "1:1", "2:1", "3:1"))
+  axis(2)
+  box()
+  segments(1:5, propOut[[i]][,1], 1:5, propOut[[i]][,5])
+  title(main = paste("sample name =", ids[[1]][i]))
+}
+
+dev.off()
+```
+
+## Program Versions
+
+Below is a list of all program versions used in this analysis. **Please note** that newer versions of these software packages *may* work for this pipeline, but be aware that usage often changes with new verions. 
+
+[ipyrad](https://ipyrad.readthedocs.io/) [release: 0.7.30](https://github.com/dereneaton/ipyrad/releases/tag/0.7.30)
+
+[STRUCTURE v.2.3.4](https://web.stanford.edu/group/pritchardlab/structure_software/release_versions/v2.3.4/html/structure.html)
+
+[Cluster Markov Packager Across K (CLUMMPAK)](http://clumpak.tau.ac.il/) 
+
+[Perl 5](https://www.perl.org/)
+
+[Python 2.7.13](https://www.python.org/downloads/release/python-2713/)
+
+[R v. 3.5.2](https://www.r-project.org/)
+
