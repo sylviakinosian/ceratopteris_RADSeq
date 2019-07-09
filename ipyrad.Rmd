@@ -312,72 +312,51 @@ library(willeerd)
 plot(r, type = "radial", show.tip.label=FALSE, cex = 5)
 
 # thalictroides
-willeerd.tiplabels(tip = c(1:17, 19:23, 25:35, 37:44, 60:61), pch = 19, radial.adj=1.05, col = "forestgreen", cex = 1.5)
+willeerd.tiplabels(tip = c(1:17, 19:23, 25:35, 37:44, 60:61), pch = 19, radial.adj=1.05, col = "#AAFFC3", cex = 1.5)
 
 # sp.
-willeerd.tiplabels(tip = c(18, 57), pch = 19, radial.adj=1.05, col = "grey", cex = 1.5)
+willeerd.tiplabels(tip = c(18, 57), pch = 19, radial.adj=1.05, col = "#E6194B", cex = 1.5)
 
 # cornuta
-willeerd.tiplabels(tip = c(50, 52, 58, 59), pch = 19, radial.adj=1.05, col = "goldenrod1", cex = 1.5)
+willeerd.tiplabels(tip = c(50, 52, 58, 59), pch = 19, radial.adj=1.05, col = "#F58231", cex = 1.5)
 
 # pteridoides
-willeerd.tiplabels(tip = c(45:49, 54), pch = 19, radial.adj=1.05, col = "cornflowerblue", cex = 1.5)
+willeerd.tiplabels(tip = c(45:49, 54), pch = 19, radial.adj=1.05, col = "#FFE119", cex = 1.5)
 
 # gaudichaudii
-willeerd.tiplabels(tip = c(36, 53), pch = 19, radial.adj=1.05, col = "deeppink", cex = 1.5)
+willeerd.tiplabels(tip = c(36, 53), pch = 19, radial.adj=1.05, col = "#469990", cex = 1.5)
 
 # richardii
-willeerd.tiplabels(tip = c(24, 55, 56), pch = 19, radial.adj=1.05, col = "blueviolet", cex = 1.5)
+willeerd.tiplabels(tip = c(24, 55, 56), pch = 19, radial.adj=1.05, col = "#3CB44B", cex = 1.5)
 
 # Acrostichum
-willeerd.tiplabels(tip = 51, pch = 19, radial.adj=1.05, col = "black", cex = 1.5)
+willeerd.tiplabels(tip = 51, pch = 19, radial.adj=1.05, col = "#800000", cex = 1.5)
 
-legend(1.1, -0.6, legend = c("C. thalictroides", "C. sp.", "C. cornuta", "C. pteridoides", "C. gaudichaudii", "C. richardii", "A. aureum"), pch = 19, cex = 1.5, col = c("forestgreen", "grey", "goldenrod1", "cornflowerblue", "deeppink", "blueviolet", "black"))
+legend(1.1, 1.2, legend = c("C. thalictroides", "C. sp.", "C. cornuta", "C. pteridoides", "C. gaudichaudii", "C. richardii", "A. aureum"), pch = 19, cex = 1.5, col = c("#AAFFC3", "#E6194B", "#F58231", "#FFE119", "#469990", "#3CB44B", "#800000"))
 
 ##################################################################
 # phy with continent
 
 # Australia
-willeerd.tiplabels(tip = c(1:12, 14:15, 30, 51), pch = 19, radial.adj=1.15, col = 'goldenrod1', cex = 1.5)
+willeerd.tiplabels(tip = c(1:12, 14:15, 30, 51), pch = 19, radial.adj=1.15, col = '#42D4F4', cex = 1.5)
 # #FFFF00
 
 # Central America
-willeerd.tiplabels(tip = c(16, 19:21, 41, 55:56), pch = 19, radial.adj=1.15, col = '#A39D9D', cex = 1.5)
+willeerd.tiplabels(tip = c(16, 19:21, 41, 55:56), pch = 19, radial.adj=1.15, col = '#4363D8', cex = 1.5)
 
 # North America
-willeerd.tiplabels(tip = c(33:34, 37, 39:40, 42, 43, 45:48, 61), pch = 19, radial.adj=1.15, col = '#A8FFFD', cex = 1.5)
+willeerd.tiplabels(tip = c(33:34, 37, 39:40, 42, 43, 45:48, 61), pch = 19, radial.adj=1.15, col = '#911EB4', cex = 1.5)
 
 # South America
-willeerd.tiplabels(tip = c(24:26, 38, 49, 54, 57), pch = 19, radial.adj=1.15, col = '#FF5A5A', cex = 1.5)
+willeerd.tiplabels(tip = c(24:26, 38, 49, 54, 57), pch = 19, radial.adj=1.15, col = '#F032E6', cex = 1.5)
 
 # Asia
-willeerd.tiplabels(tip = c(13, 17, 18, 22, 23, 27:29, 31, 32, 35, 36, 44, 53, 60), pch = 19, radial.adj=1.15, col = '#B862D3', cex = 1.5)
+willeerd.tiplabels(tip = c(13, 17, 18, 22, 23, 27:29, 31, 32, 35, 36, 44, 53, 60), pch = 19, radial.adj=1.15, col = '#A9A9A9', cex = 1.5)
 
 # Africa
 willeerd.tiplabels(tip = c(50, 52, 58, 59), pch = 19, radial.adj=1.15, col = '#000000', cex = 1.5)
 
-legend(1.1, -0.6, legend = c("Australia", "Central America", "North America", "South America", "Asia", "Africa"), pch = 19, cex = 1.5, col = c("goldenrod1", "#A39D9D", "#A8FFFD", "#FF5A5A", "#B862D3", "#000000"))
-
-########################################################
-# Australia
-willeerd.tiplabels(tip = c(1:12, 14:15, 30, 51), pch = 19, radial.adj=1.15, col = 'red', cex = 1.5)
-# #FFFF00
-
-# Central America
-willeerd.tiplabels(tip = c(16, 19:21, 41, 55:56), pch = 19, radial.adj=1.15, col = 'blue', cex = 1.5)
-
-# North America
-willeerd.tiplabels(tip = c(33:34, 37, 39:40, 42, 43, 45:48, 61), pch = 19, radial.adj=1.15, col = 'green', cex = 1.5)
-
-# South America
-willeerd.tiplabels(tip = c(24:26, 38, 49, 54, 57), pch = 19, radial.adj=1.15, col = 'yellow', cex = 1.5)
-
-# Asia
-willeerd.tiplabels(tip = c(13, 17, 18, 22, 23, 27:29, 31, 32, 35, 36, 44, 53, 60), pch = 19, radial.adj=1.15, col = 'pink', cex = 1.5)
-
-# Africa
-willeerd.tiplabels(tip = c(50, 52, 58, 59), pch = 19, radial.adj=1.15, col = 'orange', cex = 1.5)
-
+legend(1.1, -0.6, legend = c("Australia", "Central America", "North America", "South America", "Asia", "Africa"), pch = 19, cex = 1.5, col = c("#42D4F4", "#4363D8", "#911EB4", "#F032E6", "#A9A9A9", "#000000"))
 
 ```
 
