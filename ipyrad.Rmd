@@ -309,7 +309,7 @@ plot(t, cex = 0.8)
 ##################################################
 library(willeerd)
 
-plot(r, type = "radial", show.tip.label=FALSE, cex = 5)
+plot(r, direction = "up", show.tip.label=FALSE)
 
 # thalictroides
 willeerd.tiplabels(tip = c(1:17, 19:23, 25:35, 37:44, 60:61), pch = 19, radial.adj=1.05, col = "#AAFFC3", cex = 1.5)
@@ -334,7 +334,6 @@ willeerd.tiplabels(tip = 51, pch = 19, radial.adj=1.05, col = "#800000", cex = 1
 
 legend(1.1, 1.2, legend = c("C. thalictroides", "C. sp.", "C. cornuta", "C. pteridoides", "C. gaudichaudii", "C. richardii", "A. aureum"), pch = 19, cex = 1.5, col = c("#AAFFC3", "#E6194B", "#F58231", "#FFE119", "#469990", "#3CB44B", "#800000"))
 
-##################################################################
 # phy with continent
 
 # Australia
@@ -358,6 +357,62 @@ willeerd.tiplabels(tip = c(50, 52, 58, 59), pch = 19, radial.adj=1.15, col = '#0
 
 legend(1.1, -0.6, legend = c("Australia", "Central America", "North America", "South America", "Asia", "Africa"), pch = 19, cex = 1.5, col = c("#42D4F4", "#4363D8", "#911EB4", "#F032E6", "#A9A9A9", "#000000"))
 
+############################################################
+
+plot(c, direction = "up", show.tip.label = FALSE)
+
+# thalictroides
+willeerd.tiplabels(tip = c(1:17, 19, 35:37, 39:61), pch = 21, col = "#000000", bg = "#AAFFC3", cex = 1.2)
+
+# sp.
+willeerd.tiplabels(tip = c(34, 54), pch = 21, col = '#000000', bg = "#000075", cex = 1.2)
+
+# cornuta
+willeerd.tiplabels(tip = c(29, 30:32), pch = 21, col = '#000000', bg = "#F58231", cex = 1.2)
+
+# pteridoides
+willeerd.tiplabels(tip = c(22, 24:28), pch = 21, col = '#000000', bg = "#FFE119", cex = 1.2)
+
+# gaudichaudii
+willeerd.tiplabels(tip = c(18, 23), pch = 21, col = '#000000', bg = "#E6194B", cex = 1.2)
+
+# richardii
+willeerd.tiplabels(tip = c(20, 21, 38), pch = 21, col = '#000000', bg = "#3CB44B", cex = 1.2)
+
+# Acrostichum
+willeerd.tiplabels(tip = 33, pch = 21, col = '#000000', bg = "#800000", cex = 1.2)
+
+legend(1.5, 250, legend = c("C. thalictroides", "C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. sp.", "A. aureum"), pch = 19, cex = 1.5, col = c("#AAFFC3", "#E6194B", "#F58231", "#FFE119", "#3CB44B", "#000075", "#800000"))
+
+# geography
+
+plot(c, direction = "up", show.tip.label = FALSE)
+
+# Australia
+willeerd.tiplabels(tip = c(15, 33, 39, 40:52), pch = 21,  col = '#000000', bg ='#000000', cex = 1.2)
+# #FFFF00
+
+# Central America
+willeerd.tiplabels(tip = c(2,5,20,21,56:58), pch = 21, col = '#000000', bg ='#4363D8', cex = 1.2)
+
+# North America
+willeerd.tiplabels(tip = c(4,6:8, 10:12, 17, 25:28, 35), pch = 21, col = '#000000', bg ='#911EB4', cex = 1.2)
+
+# South America
+willeerd.tiplabels(tip = c(9, 22, 24, 34, 36:38), pch = 21, col = '#000000', bg ='#F032E6', cex = 1.2)
+
+# Asia
+willeerd.tiplabels(tip = c(1,3,11,13,14,16,18,19,23,53:55,59,60,61), pch = 21, col = '#000000', bg ='#A9A9A9', cex = 1.2)
+
+# Africa
+willeerd.tiplabels(tip = c(29:32), pch = 21, col = '#000000', bg = '#42D4F4', cex = 1.2)
+
+legend(1.5, 250, legend = c("Australia", "Central America", "North America", "South America", "Asia", "Africa"), pch = 19, cex = 1.5, col = c("#000000", "#4363D8", "#911EB4", "#F032E6", "#A9A9A9", "#42D4F4"))
+
+#############################################################
+# trying to sort one column by another with the same names in a different order
+# m <- match(names[,1], c_names[,1])
+# match_names <- match_names[order(m),]
 ```
 
 #### gbs2ploidy
