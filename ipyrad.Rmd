@@ -209,35 +209,7 @@ plot_q_per_chain <- function(kqlist, ...){
 }
 structure_plot(labels = x[,31], klist = klist)
 
-#######################################################
-
-plot_q_per_chain(k4list)
-
-for (i in 1:length(d[,1])){
-	lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
-}
-
-
-# k7, continent names
-
-k7list.c <- list(k7.c[,1:7])
-cont.names <- as.character(unique(k7.c[,9]))
-
-b <- as.data.frame(matrix(ncol = 1, nrow = 89))
-b[,1] <- barplot(t(k7list.c[[1]]), beside= F, col= cols, cex.name= 1, cex.axis= 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
-
-my.mean <- tapply(X = b[,1], INDEX = k7.c[,9], mean)
-my.min <- tapply(X = b[,1], INDEX = k7.c[,9], min)
-my.max <- tapply(X = b[,1], INDEX = k7.c[,9], max)
-
-d <- sp.labels(cont.names, my.min, my.mean, my.max)
-
-plot_q_per_chain(k7list.c)
-
-for (i in 1:length(d[,1])){
-	lines(x = d[i,3:4] , y = rep(-0.05, 2), lwd = 2.5, col = "black", xpd = NA)
-}
-
+############################################################################
 ############################################################################
 # for k=5 only
 plot_k5 <- function(kqlist, ...){
@@ -377,27 +349,27 @@ legend(1.1, -0.6, legend = c("Australia", "Central America", "North America", "S
 plot(c, direction = "up", show.tip.label = FALSE)
 
 # thalictroides
-willeerd.tiplabels(tip = c(1:17, 19, 35:37, 39:61), pch = 21, col = "#000000", bg = "#AAFFC3", cex = 1.2)
+willeerd.tiplabels(tip = c(1:17, 19, 35:37, 39:61), pch = 21, col = "#000000", bg = "#000075", cex = 2)
 
 # sp.
-willeerd.tiplabels(tip = c(34, 54), pch = 21, col = '#000000', bg = "#000075", cex = 1.2)
+willeerd.tiplabels(tip = c(34, 54), pch = 21, col = '#000000', bg = "#AAFFC3", cex = 2)
 
 # cornuta
-willeerd.tiplabels(tip = c(29, 30:32), pch = 21, col = '#000000', bg = "#F58231", cex = 1.2)
+willeerd.tiplabels(tip = c(29, 30:32), pch = 21, col = '#000000', bg = "#F58231", cex = 2)
 
 # pteridoides
-willeerd.tiplabels(tip = c(22, 24:28), pch = 21, col = '#000000', bg = "#FFE119", cex = 1.2)
+willeerd.tiplabels(tip = c(22, 24:28), pch = 21, col = '#000000', bg = "#FFE119", cex = 2)
 
 # gaudichaudii
-willeerd.tiplabels(tip = c(18, 23), pch = 21, col = '#000000', bg = "#E6194B", cex = 1.2)
+willeerd.tiplabels(tip = c(18, 23), pch = 21, col = '#000000', bg = "#E6194B", cex = 2)
 
 # richardii
-willeerd.tiplabels(tip = c(20, 21, 38), pch = 21, col = '#000000', bg = "#3CB44B", cex = 1.2)
+willeerd.tiplabels(tip = c(20, 21, 38), pch = 21, col = '#000000', bg = "#3CB44B", cex = 2)
 
 # Acrostichum
-willeerd.tiplabels(tip = 33, pch = 21, col = '#000000', bg = "#800000", cex = 1.2)
+willeerd.tiplabels(tip = 33, pch = 21, col = '#000000', bg = "#800000", cex = 2)
 
-legend(1.5, 250, legend = c("C. thalictroides", "C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. sp.", "A. aureum"), pch = 19, cex = 1.5, col = c("#AAFFC3", "#E6194B", "#F58231", "#FFE119", "#3CB44B", "#000075", "#800000"))
+legend(1.5, 250, legend = c("C. sp.", "C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides", "A. aureum"), pch = 19, cex = 2, col = c("#AAFFC3", "#E6194B", "#F58231", "#FFE119", "#3CB44B", "#000075", "#800000"), bty= "n", text.font = 3)
 
 # geography
 
@@ -461,6 +433,31 @@ for(i in 1:71){
 }
 
 dev.off()
+```
+
+#### Map
+
+```{r eval=FALSE}
+library(fields)
+
+map('world', fill = T, col = 'white', border = 'white', bg = 'lightgrey')
+
+# cornuta
+points(p[2:5,5], p[2:5,4], col = "#000000", bg = "#F58231", cex = 2, pch = 21)
+
+# gaudichaudii
+points(p[6:7,5], p[6:7,4], col = "#000000", bg = "#E6194B", cex = 2, pch = 21)
+
+#pteridoides
+points(p[8:13,5], p[8:13,4], col = "#000000", bg = "#FFE119", cex = 2, pch = 21)
+
+# richardii
+points(p[14:16,5], p[14:16,4], col = "#000000", bg = "#3CB44B", cex = 2, pch = 21)
+
+# thalictroides
+points(p[17:39,5], p[17:39,4], col = "#000000", bg = "#000075", cex = 2, pch = 21)
+
+legend(-170, -2, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides"), bg = "white", pch = 19, cex = 1.5, col = c("#E6194B", "#F58231", "#FFE119", "#3CB44B", "#000075"), text.font = 3)
 ```
 
 ## Program Versions
