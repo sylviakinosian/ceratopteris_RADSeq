@@ -16,8 +16,21 @@ Tests to see how reads are pairing; not easy in ipyrad
 stacks (v. 2.4) process\_radtags pipeline
 
 ```{bash eval=FALSE}
-process_radtags -P -p /media/kaiser/skinosian/ceratopteris/raw/ -o ./fastqs/ -b barcodes.txt -c -q -r --index_index --renz_1 pstI --renz_2 bfaI
+process_radtags -P -p /media/kaiser/skinosian/ceratopteris/raw/ -o ./fastqs/ -b barcodes.txt -c -q -r --inline_null --renz_1 pstI --renz_2 bfaI
+
+# 633816098 total reads; -71211474 ambiguous barcodes; -39790291 ambiguous RAD-Tags; +139518635 recovered; -47828 low quality reads; 522766505 retained reads.
+# Closing files, flushing buffers...
+# Outputing details to log: './fastqs/process_radtags.raw.log'
+
+# 633816098 total sequences
+#  71211474 barcode not found drops (11.2%)
+#     47828 low quality read drops (0.0%)
+#  39790291 RAD cutsite not found drops (6.3%)
+# 522766505 retained reads (82.5%)
 ```
+
+get coverge info from this -->
+ ~/apps/stacks-2.4/ustacks -f ../fastqs/Cr03\_R1\_.fq.gz -i 1 -o ./ -p 10
 
 #### Parameter Descriptions
 
@@ -109,6 +122,105 @@ hist(d[,3], main = "number of loci in assembly", xlab = "number of loci", breaks
 
 ## Population genetic analysis
 
+#### gbs2ploidy
+
+I converted the VCF file output by ipyrad to the gbs2ploidy format with this [Python script](https://github.com/carol-rowe666/vcf2hetAlleleDepth) written by Carol Rowe.
+
+```{r eval=FALSE}
+library(gbs2ploidy)
+
+# load sample names
+ids <- read.csv("./HAD_ID.csv")
+
+# load hetAlleleDepth table
+# 56 samples with 2 alleles per samples = 112 columns
+# 29625 SNPs / rows
+het <- as.matrix(read.table("./hetAlleleDepth.txt", header = F))
+
+# allele a for each ind
+a <- seq(1, 112, 2)
+# allele b for each ind
+b <- seq(2, 112, 2)
+
+# retrieve entire column (ind) for each allele (row)
+cov1 <- het[,a]
+cov2 <- het[,b]
+
+# props = c(0.5, 0.66, 0.75) for last three proportions (our model)
+# estprops: this functions uses Markov chain Monte Carlo to obtain Bayesian estimates of allelic proportions, which denote that proportion of heterozygous GBS SNPs with different allelic ratios.
+propOut <- estprops(cov1 = cov1, cov2 = cov2, props = c(0.25, 0.33, 0.5, 0.66, 0.75), mcmc.nchain = 3, mcmc.steps = 10000, mcmc.burnin = 1000, mcmc.thin = 5)
+
+# estprops returns a list with one component per individual. Components summarize the posterior distributions for allelic proportions. 
+# Rows correspond to different allelic proportions (as defined by ‘props’)
+# Columns give the 2.5th, 25th, 50th, 75th, and 97.5th quantiles of the posterior distribution for each parameter
+propOut[1:2]
+# [[1]]
+#            2.5%        25%        50%        75%     97.5%
+# 0.25 0.02615469 0.04860941 0.06164483 0.07515569 0.1032398
+# 0.33 0.02585112 0.05159050 0.06680296 0.08333787 0.1192802
+# 0.5  0.13956566 0.18396947 0.20859096 0.23692481 0.2916249
+# 0.66 0.14647331 0.21795926 0.25814796 0.29713085 0.3730970
+# 0.75 0.31290242 0.36928452 0.39924378 0.43130653 0.4903253
+# 
+# [[2]]
+#              2.5%         25%        50%        75%      97.5%
+# 0.25 0.1109331672 0.133872341 0.14586992 0.15856786 0.18260319
+# 0.33 0.0005099962 0.005954433 0.01351898 0.02430852 0.05098758
+# 0.5  0.1668016464 0.208449542 0.23031057 0.25328263 0.29781157
+# 0.66 0.0894613061 0.153616076 0.19248894 0.23176188 0.30600852
+# 0.75 0.3248250138 0.382064623 0.41320705 0.44262781 0.49606739
+
+# testing barplots
+dev.new()
+#pdf("g2p.pdf")
+par(mfrow = c(3, 3))
+for(i in c(1,3,4,7,10,15,28,29,56)){
+  barplot(propOut[[i]][3:5,3], ylim = c(0,1), axes = FALSE, xlab = "Allelic ratios", ylab = "Posterior proportions of allelic ratios", xaxt = 'n')
+  axis(1, at = c(0.7, 1.9, 3.1), labels = c("1:1", "2:1", "3:1"))
+  axis(2)
+  box()
+  segments(c(0.7, 1.9, 3.1), propOut[[i]][3:5,1], c(0.7, 1.9, 3.1), propOut[[i]][3:5,5])
+  title(main = paste("sample name =", ids[[1]][i]))
+}
+dev.off()
+
+dev.new()
+par(mfrow = c(3, 3))
+for(i in 1:56){
+  plot(propOut[[i]][,3], ylim = c(0,1), axes = FALSE, xlab = "ratios", ylab = "proportions")
+  axis(1, at = 1:5, c("1:3", "1:2", "1:1", "2:1", "3:1"))
+  axis(2)
+  box()
+  segments(1:5, propOut[[i]][,1], 1:5, propOut[[i]][,5])
+  title(main = paste("sample name =", ids[[1]][i]))
+}
+dev.off()
+
+dev.new()
+par(mfrow = c(3, 3))
+for(i in c(1,3,4,7,10,15,28,29,56)){
+  plot(propOut[[i]][,3], ylim = c(0,1), axes = FALSE, xlab = "ratios", ylab = "proportions")
+  axis(1, at = 1:3, c("1:1", "2:1", "3:1"))
+  axis(2)
+  box()
+  segments(1:5, propOut[[i]][,1], 1:5, propOut[[i]][,5])
+  title(main = paste("sample name =", ids[[1]][i]))
+}
+dev.off()
+
+############################
+# estploidy
+# Use principal component analysis (PCA) and discriminant analysis (DA) to assign individuals to different cytotype groups based on GBS data. This function can be run with or without a training set of individuals with known cytotypes.
+
+h <- apply(is.na(cov1) == FALSE, 2, mean)
+d <- apply(cov1 + cov2, 2, mean, na.rm = TRUE)
+
+ep <- estploidy(alphas = propOut, het = h, depth = d, train = FALSE, pl = NA, set = NA, nclasses = 3, ids = ids, pcs = 1:2)
+```
+
+- /media/kaiser/skinosian/paired/ingroup/ig\_outfiles/g2p/
+- we care about [3:5,3] (mean), [3:5,1] & [3:5,5] (CIs)
+
 #### STRUCTURE
 
 The population genetics analysis program STRUCTURE (v. 2.3.4) was used to identify populations within the genus. For each k value, we ran 50 replicates (NOTE: include params files in github).
@@ -133,20 +245,28 @@ k7 <- read.csv("k7.txt", sep = '', header = F)
 k7 <- k7[,-(1:5)]
 
 # names file includes individual ids, species names, and geographic locations
-names <- read.csv("names.csv", sep = ',', header = T)
+names <- read.csv("names.txt", sep = ',', header = T)
 
-x <- as.data.frame(matrix(ncol = 18, nrow = 60))
+x <- as.data.frame(matrix(ncol = 32, nrow = 56))
 x[,1:2] <- k2
 x[,3:5] <- k3
 x[,6:9] <- k4
 x[,10:14] <- k5
 x[,15:20] <- k6
 x[,21:27] <- k7
-x[,28:31] <- names
+x[,28:32] <- names
 
+# order by species, then geography
+x <- x[order(x$V30, x$V32),]
+
+# list for plotting
 klist <- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[15:20], x[,21:27])
+k5list <- list(x[10:14])
 
-structure_plot(names, ninds = 67, klist)
+# geography for k = 6
+kglist <- list(g[15:20])
+
+structure_plot(x[,30], ninds = 56, klist)
 
 #######################################################
 # functions needed
@@ -162,7 +282,7 @@ structure_plot <- function(labels, ninds = 60, klist){
 	#n[,1] <- names
 	# locations of each column
 	b <- as.data.frame(matrix(ncol = 1, nrow = ninds))
-	b[,1] <- barplot(t(k6list[[1]][1]), beside= F, col= cols, cex.name= 1, cex.axis= 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
+	b[,1] <- barplot(t(klist[[1]][1]), beside= F, col= cols, cex.name= 1, cex.axis= 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
 	# find locations for labels in the barplot
 	my.mean <- tapply(X = b[,1], INDEX = labels, mean)
 	my.min <- tapply(X = b[,1], INDEX = labels, min)
@@ -193,7 +313,9 @@ sp_labels <- function(names, min, mean, max, ...){
 
 # plot chains with species and geography labels 
 plot_q_per_chain <- function(kqlist, ...){
-	cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 	
+	# thalictroides 2, gaudichaudii, thalictroides 1, pteridoides, cornuta, misc, 
+	cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 
+	#cols <- c('#000075', '#E6194B', '#AAFFC3', '#FFE119', '#F58231', '#3CB44B')
 	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
 	chain <- seq(1, length(kqlist), 1) 
 	for(i in 1:length(kqlist)){
@@ -201,13 +323,9 @@ plot_q_per_chain <- function(kqlist, ...){
 		# y axis
 		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
  	}
-	# x axis, rotating labels
-	# species labels
-		# location labels (make new df for this one?)
-	#text(cex = 1.7, x = (e[,3]-4), y = -0.9, labels = e[,1], xpd=na, srt=50, font=3)
-
 }
-structure_plot(labels = x[,31], klist = klist)
+
+structure_plot(labels = names[,4], ninds = 60, klist = k6list)
 
 ############################################################################
 ############################################################################
@@ -218,13 +336,13 @@ plot_k5 <- function(kqlist, ...){
 	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
 	chain <- seq(1, length(kqlist), 1) 
 	for(i in 1:length(kqlist)){
-		barplot(t(kqlist[[i]]), beside= F, col= cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = substitute(paste(italic(K)," = 6")), cex.lab = 1.6, cex.main = 2.0, ylab = "Proportion of genome")
+		barplot(t(kqlist[[i]]), beside= F, col= cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = substitute(paste(italic(K)," = 5")), cex.lab = 1.6, cex.main = 2.0, ylab = "Proportion of genome")
 		# y axis
 		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
  	}
 }
 
-plot_k5(k6list)
+plot_k5(k5list)
 
 # x axis, rotating labels
 text(cex = 1.7, x = (d[,2]-0.4), y = -0.3, labels = d[,1], xpd=NA, srt=50, font=3)
@@ -260,17 +378,17 @@ print("connected to {} cores".format(len(ipyclient)))
 
 tet = ipa.tetrad(
 	name="cer",
-	seqfile="./final.snps.phy",
-	mapfile="./final.snps.map",
-	nboots=50,
+	seqfile="./og.snps.phy",
+	mapfile="./og.snps.map",
+	nboots=100,
 	)
 
-# loading seq array [48 taxa x 16866 bp]
-# max unlinked SNPs per quartet (nloci): 4491
+# loading seq array [57 taxa x 29849 bp]
+# max unlinked SNPs per quartet (nloci): 8602
 
 tet.run(ipyclient=ipyclient)
 # host comput node: [24 cores] on kp382
-# inferring 3321960 induced quartet trees
+# inferring 395010 induced quartet trees
 # [####################] 100%  initial tree | 0:00:33 |
 # [####################] 100%  boot 100     | 0:47:22 |
 ```
@@ -298,34 +416,7 @@ plot(t, cex = 0.8)
 
 t$tip.label <- as.character(cnames$str_sp)
 
-############################################################
-# plot with species names
-
-plot(c, direction = "up", show.tip.label = FALSE)
-
-# thalictroides
-willeerd.tiplabels(tip = c(1:17, 19, 35:37, 39:61), pch = 21, col = "#000000", bg = "#000075", cex = 2)
-
-# sp.
-willeerd.tiplabels(tip = c(34, 54), pch = 21, col = '#000000', bg = "#AAFFC3", cex = 2)
-
-# cornuta
-willeerd.tiplabels(tip = c(29, 30:32), pch = 21, col = '#000000', bg = "#F58231", cex = 2)
-
-# pteridoides
-willeerd.tiplabels(tip = c(22, 24:28), pch = 21, col = '#000000', bg = "#FFE119", cex = 2)
-
-# gaudichaudii
-willeerd.tiplabels(tip = c(18, 23), pch = 21, col = '#000000', bg = "#E6194B", cex = 2)
-
-# richardii
-willeerd.tiplabels(tip = c(20, 21, 38), pch = 21, col = '#000000', bg = "#3CB44B", cex = 2)
-
-# Acrostichum
-willeerd.tiplabels(tip = 33, pch = 21, col = '#000000', bg = "#800000", cex = 2)
-
-legend(1.5, 250, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. sp.", "C. thalictroides", "A. aureum"), pch = 19, cex = 2, col = c("#E6194B", "#F58231", "#FFE119", "#3CB44B", "#AAFFC3", "#000075", "#800000"), bty= "n", text.font = 3)
-
+################################################################
 # plot with geography
 
 plot(c, direction = "up", show.tip.label = FALSE)
@@ -351,32 +442,65 @@ willeerd.tiplabels(tip = c(29:32), pch = 21, col = '#000000', bg = '#42D4F4', ce
 
 legend(1.5, 250, legend = c("Australia", "Central America", "North America", "South America", "Asia", "Africa"), pch = 19, cex = 1.5, col = c("#000000", "#4363D8", "#911EB4", "#F032E6", "#A9A9A9", "#42D4F4"))
 
+#####################################################################
 # plot with new names, derived from structure
 
+pdf("phy.pdf", width = 15, height = 10)
 plot(t, direction = 'up', show.tip.label = FALSE)
 
 # thalictroides 1
-willeerd.tiplabels(tip = c(19, 4:10, 54), pch = 21, col = '#000000', bg = "#AAFFC3", cex = 2)
+willeerd.tiplabels(tip = c(1:14, 15, 16, 18, 20, 49:57), pch = 21, col = "#000000", bg = "#AAFFC3", cex = 2)
 
 # thalictroides 2
-willeerd.tiplabels(tip = c(1, 2, 36, 37, 39:53, 55:61), pch = 21, col = "#000000", bg = "#000075", cex = 2)
+willeerd.tiplabels(tip = c(41:47), pch = 21, col = "#000000", bg = "#000075", cex = 2)
 
 # cornuta
-willeerd.tiplabels(tip = c(3, 22, 29:32, 34), pch = 21, col = '#000000', bg = "#F58231", cex = 2)
+willeerd.tiplabels(tip = c(19, 21, 22, 31, 32), pch = 21, col = '#000000', bg = "#F58231", cex = 2)
 
 # pteridoides
 willeerd.tiplabels(tip = c(24:28), pch = 21, col = '#000000', bg = "#FFE119", cex = 2)
 
 # gaudichaudii
-willeerd.tiplabels(tip = c(11:18, 23, 35), pch = 21, col = '#000000', bg = "#E6194B", cex = 2)
+willeerd.tiplabels(tip = c(33:40, 48), pch = 21, col = '#000000', bg = "#E6194B", cex = 2)
 
 # richardii
-willeerd.tiplabels(tip = c(20, 21, 38), pch = 21, col = '#000000', bg = "#3CB44B", cex = 2)
+willeerd.tiplabels(tip = c(17, 23, 29), pch = 21, col = '#000000', bg = "#3CB44B", cex = 2)
 
 # Acrostichum
-willeerd.tiplabels(tip = 33, pch = 21, col = '#000000', bg = "#800000", cex = 2)
+willeerd.tiplabels(tip = 30, pch = 21, col = '#000000', bg = "#800000", cex = 2)
 
-legend(1.5, 250, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides 1", "C. thalictroides 2", "A. aureum"), pch = 19, cex = 2, col = c("#E6194B", "#F58231", "#FFE119", "#3CB44B", "#AAFFC3", "#000075", "#800000"), bty= "n", text.font = 3)
+legend(1.5, 400, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides 1", "C. thalictroides 2", "A. aureum"), pch = 19, cex = 2, col = c("#E6194B", "#F58231", "#FFE119", "#3CB44B", "#AAFFC3", "#000075", "#800000"), bty= "n", text.font = 3)
+
+dev.off()
+
+#######################
+plot(t, direction = 'up', show.tip.label = FALSE)
+
+# thalictroides 2, gaudichaudii, thalictroides 1, pteridoides, cornuta, misc, 
+	#cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF')
+
+# thalictroides 1
+willeerd.tiplabels(tip = c(1:14, 15, 16, 18, 20, 49:57), pch = 21, col = '#000000', bg = "#FFFF00", cex = 2.5)
+
+# thalictroides 2
+willeerd.tiplabels(tip = c(41:47), pch = 21, col = "#000000", bg = "#A8FFFD", cex = 2.5)
+
+# cornuta
+willeerd.tiplabels(tip = c(19, 21, 22, 31, 32), pch = 21, col = '#000000', bg = "#A39D9D", cex = 2.5)
+
+# pteridoides
+willeerd.tiplabels(tip = c(24:28), pch = 21, col = '#000000', bg = "#B862D3", cex = 2.5)
+
+# gaudichaudii
+willeerd.tiplabels(tip = c(33:40, 48), pch = 21, col = '#000000', bg = "#69C261", cex = 2.5)
+
+# richardii
+willeerd.tiplabels(tip = c(17, 23, 29), pch = 21, col = '#000000', bg = "#FF59AC", cex = 2.5)
+
+# Acrostichum
+willeerd.tiplabels(tip = 30, pch = 21, col = '#000000', bg = "#800000", cex = 2.5)
+
+legend(1.5, 400, legend = c("C. thalictroides 1", "C. thalictroides 2", "C. cornuta", "C. gaudichaudii", "C. pteridoides", "C. richardii", "A. aureum"), pch = 19, cex = 2, col = c("#FFFF00", "#A8FFFD", "#A39D9D",  "#69C261", "#B862D3", "#FF59AC", "#800000"), bty= "n", text.font = 3)
 
 
 #############################################################
@@ -385,85 +509,40 @@ legend(1.5, 250, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "
 # match_names <- match_names[order(m),]
 ```
 
-#### gbs2ploidy
-
-I converted the VCF file output by ipyrad to the gbs2ploidy format with this [Python script](https://github.com/carol-rowe666/vcf2hetAlleleDepth) written by Carol Rowe.
-
-```{r eval=FALSE}
-library(gbs2ploidy)
-
-ids <- read.csv("./HAD_ID.csv")
-het <- as.matrix(read.table("./hetAlleleDepth.txt", header = F))
-
-a <- seq(1, 120, 2)
-b <- seq(2, 120, 2)
-
-cov1 <- het[,a]
-cov2 <- het[,b]
-
-propOut <- estprops(cov1 = cov1, cov2 = cov2, props = c(0.25, 0.33, 0.5, 0.66, 0.75), mcmc.nchain = 3, mcmc.steps = 10000, mcmc.burnin = 1000, mcmc.thin = 5)
-
-dev.new()
-par(mfrow = c(3, 3))
-for(i in 1:60){
-  barplot(propOut[[i]][3:5,3], ylim = c(0,1), axes = FALSE, xlab = "ratios", ylab = "proportions", xaxt = 'n')
-  axis(1, at = c(0.7, 1.9, 3.1), labels = c("1:1", "2:1", "3:1"))
-  axis(2)
-  box()
-  #segments(1:5, propOut[[i]][,1], 1:5, propOut[[i]][,5])
-  title(main = paste("sample name =", ids[[1]][i]))
-}
-dev.off()
-
-dev.new()
-par(mfrow = c(3, 3))
-for(i in 1:60){
-  plot( propOut[[i]][,3], ylim = c(0,1), axes = FALSE, xlab = "ratios", ylab = "proportions")
-  axis(1, at = 1:5, c("1:3", "1:2", "1:1", "2:1", "3:1"))
-  axis(2)
-  box()
-  segments(1:5, propOut[[i]][,1], 1:5, propOut[[i]][,5])
-  title(main = paste("sample name =", ids[[1]][i]))
-}
-dev.off()
-##########################################################################
-
-par(mfrow = c(3, 3))
-
-barplot(p[3:5,3], ylim = c(0,1), axes = FALSE, xlab = "ratios", ylab = "proportions")
-axis(1, at = c(0.7, 1.9, 3.1), c("1:1", "2:1", "3:1"))
-axis(2)
-box()
-segments(c(0.7, 1.9, 3.1), p[3:5,1], c(0.7, 1.9, 3.1), p[3:5,5])
-
-title(main = paste("sample name =", ids[[1]][i]))
-
-```
-
 #### Map
 
 ```{r eval=FALSE}
 library(fields)
 
+# read in location data
+p <- read.csv("cer_locations.csv", header = T, sep = ',')
+
+# map
 map('world', fill = T, col = 'white', border = 'white', bg = 'lightgrey')
 
+# OW thalictroides
+points(p[c(18:31, 33:35),5], p[c(18:31, 33:35),4], col = "#000000", bg = "#FFFF00", cex = 2, pch = 21)
+
+# NW thalictroides
+points(p[c(17, 32, 36:39),5], p[c(17, 32, 36:39), 4], col = "#000000", bg = "#A8FFFD", cex = 2, pch = 21)
+
 # cornuta
-points(p[2:5,5], p[2:5,4], col = "#000000", bg = "#F58231", cex = 2, pch = 21)
+points(p[2:5,5], p[2:5,4], col = "#000000", bg = "#A39D9D", cex = 2, pch = 21)
 
 # gaudichaudii
-points(p[6:7,5], p[6:7,4], col = "#000000", bg = "#E6194B", cex = 2, pch = 21)
+points(p[6:7,5], p[6:7,4], col = "#000000", bg = "#69C261", cex = 2, pch = 21)
 
 #pteridoides
-points(p[8:13,5], p[8:13,4], col = "#000000", bg = "#FFE119", cex = 2, pch = 21)
+points(p[8:13,5], p[8:13,4], col = "#000000", bg = "#B862D3", cex = 2, pch = 21)
 
 # richardii
-points(p[14:16,5], p[14:16,4], col = "#000000", bg = "#3CB44B", cex = 2, pch = 21)
+points(p[14:16,5], p[14:16,4], col = "#000000", bg = "#FF59AC", cex = 2, pch = 21)
 
-# thalictroides
-points(p[17:39,5], p[17:39,4], col = "#000000", bg = "#000075", cex = 2, pch = 21)
+#legend(-170, -2, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides"), bg = "white", pch = 19, cex = 1.5, col = c("#B862D3", "#69C261", "#FFFF00", "#FF59AC", "#A8FFFD"), text.font = 3)
 
-legend(-170, -2, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides"), bg = "white", pch = 19, cex = 1.5, col = c("#E6194B", "#F58231", "#FFE119", "#3CB44B", "#000075"), text.font = 3)
+legend(-170, -2, legend = c("C. thalictroides 1", "C. thalictroides 2", "C. cornuta", "C. gaudichaudii", "C. pteridoides", "C. richardii"), bg = "white", pch = 19, cex = 1.5, col = c("#FFFF00", "#A8FFFD", "#A39D9D", "#69C261", "#B862D3", "#FF59AC"), text.font = 3)
 ```
+
 
 ## Program Versions
 

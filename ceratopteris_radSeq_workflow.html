@@ -7,6 +7,7 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
 <meta name="author" content="Sylvia Kinosian" />
@@ -269,7 +270,6 @@ code {
 }
 img {
   max-width:100%;
-  height: auto;
 }
 .tabbed-pane {
   padding-top: 12px;
@@ -343,18 +343,6 @@ summary {
 }
 </style>
 
-<script>
-$(document).ready(function () {
-  window.buildTabsets("TOC");
-});
-
-$(document).ready(function () {
-  $('.tabset-dropdown > .nav-tabs > li').click(function () {
-    $(this).parent().toggleClass('nav-tabs-open')
-  });
-});
-</script>
-
 <!-- code folding -->
 
 
@@ -400,6 +388,7 @@ $(document).ready(function () {
 #     47828 low quality read drops (0.0%)
 #  39790291 RAD cutsite not found drops (6.3%)
 # 522766505 retained reads (82.5%)</code></pre>
+<p>get coverge info from this –&gt; ~/apps/stacks-2.4/ustacks -f ../fastqs/Cr03_R1_.fq.gz -i 1 -o ./ -p 10</p>
 <div id="parameter-descriptions" class="section level4">
 <h4>Parameter Descriptions</h4>
 <p><strong>-p</strong>: path to input files <br> <strong>-P</strong>, –paired: paired-end reads <br> <strong>-o</strong>: path to output files <br> <strong>-b</strong>: path to barcodes <br> <strong>-c, –clean</strong>: clean data, remove any read with an uncalled base <br> <strong>-q, –quality</strong>: discard reads with low quality scores (&lt; 20) <br> <strong>-r, -rescue</strong>: rescue barcodes and RAD-Tags <br> <strong>–index_index:</strong> Paired-end with index barcodes on the single and paired-ends <br> <strong>–renz_1</strong>, <strong>–renz_2:</strong> double-digest restiction enzymes</p>
@@ -508,18 +497,18 @@ propOut[1:2]
 # 0.75 0.3248250138 0.382064623 0.41320705 0.44262781 0.49606739
 
 # testing barplots
-#dev.new()
+dev.new()
 #pdf(&quot;g2p.pdf&quot;)
-#par(mfrow = c(3, 3))
-#for(i in 1:60){
-#  barplot(propOut[[i]][3:5,3], ylim = c(0,1), axes = FALSE, xlab = &quot;Allelic ratios&quot;, ylab = &quot;Posterior proportions of allelic ratios&quot;, xaxt = 'n')
-#  axis(1, at = c(0.7, 1.9, 3.1), labels = c(&quot;1:1&quot;, &quot;2:1&quot;, &quot;3:1&quot;))
-#  axis(2)
-#  box()
-#  segments(c(0.7, 1.9, 3.1), propOut[[i]][3:5,1], c(0.7, 1.9, 3.1), propOut[[i]][3:5,5])
-#  title(main = paste(&quot;sample name =&quot;, ids[[1]][i]))
-#}
-#dev.off()
+par(mfrow = c(3, 3))
+for(i in c(1,3,4,7,10,15,28,29,56)){
+  barplot(propOut[[i]][3:5,3], ylim = c(0,1), axes = FALSE, xlab = &quot;Allelic ratios&quot;, ylab = &quot;Posterior proportions of allelic ratios&quot;, xaxt = 'n')
+  axis(1, at = c(0.7, 1.9, 3.1), labels = c(&quot;1:1&quot;, &quot;2:1&quot;, &quot;3:1&quot;))
+  axis(2)
+  box()
+  segments(c(0.7, 1.9, 3.1), propOut[[i]][3:5,1], c(0.7, 1.9, 3.1), propOut[[i]][3:5,5])
+  title(main = paste(&quot;sample name =&quot;, ids[[1]][i]))
+}
+dev.off()
 
 dev.new()
 par(mfrow = c(3, 3))
@@ -535,7 +524,7 @@ dev.off()
 
 dev.new()
 par(mfrow = c(3, 3))
-for(i in 1:56){
+for(i in c(1,3,4,7,10,15,28,29,56)){
   plot(propOut[[i]][,3], ylim = c(0,1), axes = FALSE, xlab = &quot;ratios&quot;, ylab = &quot;proportions&quot;)
   axis(1, at = 1:3, c(&quot;1:1&quot;, &quot;2:1&quot;, &quot;3:1&quot;))
   axis(2)
@@ -835,24 +824,33 @@ legend(1.5, 400, legend = c(&quot;C. thalictroides 1&quot;, &quot;C. thalictroid
 <h4>Map</h4>
 <pre class="r"><code>library(fields)
 
+# read in location data
+p &lt;- read.csv(&quot;cer_locations.csv&quot;, header = T, sep = ',')
+
+# map
 map('world', fill = T, col = 'white', border = 'white', bg = 'lightgrey')
 
+# OW thalictroides
+points(p[c(18:31, 33:35),5], p[c(18:31, 33:35),4], col = &quot;#000000&quot;, bg = &quot;#FFFF00&quot;, cex = 2, pch = 21)
+
+# NW thalictroides
+points(p[c(17, 32, 36:39),5], p[c(17, 32, 36:39), 4], col = &quot;#000000&quot;, bg = &quot;#A8FFFD&quot;, cex = 2, pch = 21)
+
 # cornuta
-points(p[2:5,5], p[2:5,4], col = &quot;#000000&quot;, bg = &quot;#69C261&quot;, cex = 2, pch = 21)
+points(p[2:5,5], p[2:5,4], col = &quot;#000000&quot;, bg = &quot;#A39D9D&quot;, cex = 2, pch = 21)
 
 # gaudichaudii
-points(p[6:7,5], p[6:7,4], col = &quot;#000000&quot;, bg = &quot;#B862D3&quot;, cex = 2, pch = 21)
+points(p[6:7,5], p[6:7,4], col = &quot;#000000&quot;, bg = &quot;#69C261&quot;, cex = 2, pch = 21)
 
 #pteridoides
-points(p[8:13,5], p[8:13,4], col = &quot;#000000&quot;, bg = &quot;#FFFF00&quot;, cex = 2, pch = 21)
+points(p[8:13,5], p[8:13,4], col = &quot;#000000&quot;, bg = &quot;#B862D3&quot;, cex = 2, pch = 21)
 
 # richardii
 points(p[14:16,5], p[14:16,4], col = &quot;#000000&quot;, bg = &quot;#FF59AC&quot;, cex = 2, pch = 21)
 
-# thalictroides
-points(p[17:39,5], p[17:39,4], col = &quot;#000000&quot;, bg = &quot;#A8FFFD&quot;, cex = 2, pch = 21)
+#legend(-170, -2, legend = c(&quot;C. gaudichaudii&quot;, &quot;C. cornuta&quot;, &quot;C. pteridoides&quot;, &quot;C. richardii&quot;, &quot;C. thalictroides&quot;), bg = &quot;white&quot;, pch = 19, cex = 1.5, col = c(&quot;#B862D3&quot;, &quot;#69C261&quot;, &quot;#FFFF00&quot;, &quot;#FF59AC&quot;, &quot;#A8FFFD&quot;), text.font = 3)
 
-legend(-170, -2, legend = c(&quot;C. gaudichaudii&quot;, &quot;C. cornuta&quot;, &quot;C. pteridoides&quot;, &quot;C. richardii&quot;, &quot;C. thalictroides&quot;), bg = &quot;white&quot;, pch = 19, cex = 1.5, col = c(&quot;#B862D3&quot;, &quot;#69C261&quot;, &quot;#FFFF00&quot;, &quot;#FF59AC&quot;, &quot;#A8FFFD&quot;), text.font = 3)</code></pre>
+legend(-170, -2, legend = c(&quot;C. thalictroides 1&quot;, &quot;C. thalictroides 2&quot;, &quot;C. cornuta&quot;, &quot;C. gaudichaudii&quot;, &quot;C. pteridoides&quot;, &quot;C. richardii&quot;), bg = &quot;white&quot;, pch = 19, cex = 1.5, col = c(&quot;#FFFF00&quot;, &quot;#A8FFFD&quot;, &quot;#A39D9D&quot;, &quot;#69C261&quot;, &quot;#B862D3&quot;, &quot;#FF59AC&quot;), text.font = 3)</code></pre>
 </div>
 </div>
 <div id="program-versions" class="section level2">
@@ -884,6 +882,23 @@ $(document).ready(function () {
 
 
 </script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>
