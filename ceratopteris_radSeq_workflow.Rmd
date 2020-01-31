@@ -71,9 +71,9 @@ ipyrad -p params-cer1.txt 1234567
 ------- ipyrad params file (v.0.7.30)-------------------------------------------
 cer1                           ## [0] [assembly_name]: Assembly name. Used to name output directories
 ./                             ## [1] [project_dir]: Project dir (made in curdir if not present)
-./rawData/*.fastq.gz           ## [2] [raw_fastq_path]: Location of raw non-demultiplexed fastq files
+                               ## [2] [raw_fastq_path]: Location of raw non-demultiplexed fastq files
                                ## [3] [barcodes_path]: Location of barcodes file
-                               ## [4] [sorted_fastq_path]: Location of demultiplexed/sorted fastq files
+../*.fastq.gz                  ## [4] [sorted_fastq_path]: Location of demultiplexed/sorted fastq files
 denovo                         ## [5] [assembly_method]: Assembly method 
                                ## [6] [reference_sequence]: Location of reference sequence file
 pairddrad                      ## [7] [datatype]: Datatype (see docs): rad, gbs, ddrad, etc.
