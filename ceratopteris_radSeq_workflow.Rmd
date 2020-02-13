@@ -11,7 +11,6 @@ All data analysis except the data visualization were run on the University of Ut
 ## Demultiplexing
 
 ### STACKS
-Tests to see how reads are pairing; not easy in ipyrad
 
 stacks (v. 2.4) process\_radtags pipeline
 
@@ -52,15 +51,6 @@ get coverge info from this -->
 <br>
 **--renz\_1**, **--renz\_2:** double-digest restiction enzymes
 
-### PEAR
-
-Paired-end Read Merger (v. 0.9.11)
-
-```{bash eval=FALSE}
-pear -f -r -o
-```
-
-
 ## ipyrad
 
 ```{bash eval=FALSE}
@@ -73,7 +63,7 @@ cer1                           ## [0] [assembly_name]: Assembly name. Used to na
 ./                             ## [1] [project_dir]: Project dir (made in curdir if not present)
                                ## [2] [raw_fastq_path]: Location of raw non-demultiplexed fastq files
                                ## [3] [barcodes_path]: Location of barcodes file
-../*.fastq.gz                  ## [4] [sorted_fastq_path]: Location of demultiplexed/sorted fastq files
+../fastqs/*.fastq.gz           ## [4] [sorted_fastq_path]: Location of demultiplexed/sorted fastq files
 denovo                         ## [5] [assembly_method]: Assembly method 
                                ## [6] [reference_sequence]: Location of reference sequence file
 pairddrad                      ## [7] [datatype]: Datatype (see docs): rad, gbs, ddrad, etc.
@@ -198,7 +188,7 @@ for(i in 1:6){
 }
 dev.off()
 
-
+# testing other plots
 #dev.new()
 #par(mfrow = c(3, 3))
 #for(i in 1:56){
@@ -238,9 +228,6 @@ d <- apply(cov1 + cov2, 2, mean, na.rm = TRUE)
 
 ep <- estploidy(alphas = propOut, het = h, depth = d, train = FALSE, pl = NA, set = NA, nclasses = 3, ids = ids, pcs = 1:2)
 ```
-
-- /media/kaiser/skinosian/paired/ingroup/ig\_outfiles/g2p/
-- we care about [3:5,3] (mean), [3:5,1] & [3:5,5] (CIs)
 
 #### STRUCTURE
 
@@ -413,6 +400,8 @@ tet.run(ipyclient=ipyclient)
 # [####################] 100%  initial tree | 0:00:33 |
 # [####################] 100%  boot 100     | 0:47:22 |
 ```
+
+Note: the final version of this took a long time to run (several hours) on a laptop with 4 cores and 16GB of ram
 
 Plotting
 ```{r eval=FALSE}
