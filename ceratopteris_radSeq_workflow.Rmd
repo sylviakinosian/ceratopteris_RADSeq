@@ -8,6 +8,82 @@ All data analysis except the data visualization were run on the University of Ut
 
 # {.tabset}
 
+## Simulation
+
+### Retrieval of SNPs from the *Ceratopteris richardii* genome
+
+We used the program [ddRADseqTools](https://github.com/GGFHF/ddRADseqTools) to simulate an enzyme digest of the *C. richardii* genome. Our actual samples of *C. richardii* did not sequence very well (we are not sure why), and so to have at least one representative of the species in our analyses, we decided to pull SNPs from the current genome assembly of *C. richardii* (roughly equal to 38% of the total genome).
+
+Please see the ddRADseqTools manual for parameter descriptions. 
+
+#### *In silico* digest
+
+We first used the program rsitesearch.py to simulation a digest of the *C. richardii* genome. We mirrored the actual library preparation as closely as possible, using the enzymes PstI and BfaI, and a site selection of 250-350 BP fragments.
+
+Config file (rsitesearch-config.txt):
+```{bash eval=FALSE}
+genfile=./genomes/fern.racon.fasta          # file of the reference genome in fasta format
+fragsfile=./results/fragments.fasta         # path of the fragments file
+rsfile=./restrictionsites.txt               # path of the restriction sites file
+enzyme1=PstI                                # id of 1st restriction enzyme used in rsfile or its restriction site sequence
+enzyme2=BfaI                                # id of 2nd restriction enzyme used in rsfile or its restriction site sequence
+minfragsize=250                             # lower boundary of loci fragment's size
+maxfragsize=350                             # upper boundary of loci fragment's size
+fragstfile=./results/fragments-stats.txt    # path of the output statistics file
+fragstinterval=25                           # interval length of fragment size
+plot=YES                                    # statistical graphs: YES or NO
+verbose=YES                                 # additional job status info during the run: YES or NO
+trace=YES                                   # additional info useful to the developer team: YES or NO
+```
+
+Note: takes >1 hr to run on 1 core; 126GB RAM
+
+#### Building a library
+
+Next we used the program simddradseq.py to build a simulated Illumnia library of paired-end reads. 
+
+Config file (simddradseq-config.txt):
+```{bash eval=FALSE}
+fragsfile=./results/fragments.fasta         # path of the fragments file
+technique=IND1_IND2                         # IND1 (only index1), IND1_DBR (index1 + DBR), IND1_IND2 (index1 + index2) or IND1_IND2_DBR (index1 + index2 + DBR)
+format=FASTQ                                # FASTA or FASTQ (format of fragments file)
+readsfile=./results/reads                   # path of the output file with generated sequences without extension
+readtype=PE                                 # SE (single-end) or PE (pair-end)
+rsfile=./restrictionsites.txt               # path of the restriction sites file
+enzyme1=PstI                                # code of 1st restriction enzyme used in rsfile or its restriction site sequence
+enzyme2=BfaI                                # code of 2nd restriction enzyme used in rsfile or its restriction site sequence
+endsfile=./ends.txt                         # path oh the end selengthquences file
+index1len=6                                  # index sequence length in the adapter 1
+index2len=6                                  # index sequence length in the adapter 2 (it must be 0 when technique is IND1)
+dbrlen=0                                    # DBR sequence length (it must be 0 when technique is IND1 or IND1_IND2)
+wend=end73                                  # code used in endsfile corresponding to the end where the adapter 1 is
+cend=end74                                  # code used in endsfile corresponding to the end where the adapter 2 is
+individualsfile=./individuals.txt           # path of individuals file
+locinum=1000                                # loci number to sample
+readsnum=100000                             # reads number
+minreadvar=0.8                              # lower variation on reads number per locus (0.5 <= minreadvar <= 1.0)
+maxreadvar=1.4                              # upper variation on reads number per locus (1.0 <= maxreadvar <= 1.5)
+insertlen=100                               # read length, i. e. genome sequence length inserted in reads
+mutprob=0.01                                # mutation probability (0.0 <= mutprob < 1.0)
+locusmaxmut=1                               # maximum mutations number by locus (1 <= locusmaxmut <= 5)
+indelprob=0.4                               # insertion/deletion probability (0.0 <= indelprob < 1.0)
+maxindelsize=3                              # upper insertion/deletion size (1 <= maxindelsize < 30)
+dropout=0.0                                 # mutation probability in the enzyme recognition sites (0.0 <= dropout < 1.0)
+pcrdupprob=0.0                              # PCR duplicates probability in a locus (0.0 <= pcrdupprob < 1.0)
+pcrdistribution=MULTINOMIAL                 # distribution type to calculate the PCR duplicates number: MULTINOMIAL or POISSON
+multiparam=0.333,0.267,0.200,0.133,0.067    # probability values to multinomial distribution with format prob1,prob2,...,probn (they must sum 1.0)
+poissonparam=1.0                            # lambda value of the Poisson distribution
+gcfactor=0.0                                # weight factor of GC ratio in a locus with PCR duplicates (0.0 <= gcfactor < 1.0)
+verbose=YES                                 # additional job status info during the run: YES or NO
+trace=NO                                    # additional info useful to the developer team: YES or NO
+```
+
+#### Demultiplexing simulated reads
+
+
+
+#### Trimming simulated reads
+
 ## Demultiplexing
 
 ### STACKS
@@ -52,10 +128,6 @@ get coverge info from this -->
 **--renz\_1**, **--renz\_2:** double-digest restiction enzymes
 
 ## ipyrad
-
-```{bash eval=FALSE}
-ipyrad -p params-cer1.txt 1234567
-```
 
 ```{bash eval=FALSE}
 ------- ipyrad params file (v.0.7.30)-------------------------------------------
@@ -109,6 +181,18 @@ d <- read.csv("./structure/reads.raw.txt", sep = ',', header = T)
 hist(d[,2], main = "raw reads", xlab = "number of reads", breaks = 20)
 hist(d[,3], main = "number of loci in assembly", xlab = "number of loci", breaks = 20)
 ```
+
+We ran ipyrad steps 1 and 2 separately for our sequenced data, and also for our simulated data from the *C. richardii* genome. Then, we merged to two assemblies. Finally, we ran the remaining steps of ipyrad for all merged individuals. 
+
+```{bash eval=FALSE}
+ipyrad -p params-cer1.txt 12
+ipyrad -p params-ra.txt 12
+
+ipyrad -m all params-cer1.txt params-richardii.txt
+
+ipyrad -p params-all.txt -s 34567 -f
+```
+
 
 ## Population genetic analysis
 
@@ -388,7 +472,7 @@ tet = ipa.tetrad(
 	name="cer",
 	seqfile="./og.snps.phy",
 	mapfile="./og.snps.map",
-	nboots=100,
+	nboots=50,
 	)
 
 # loading seq array [57 taxa x 29849 bp]
@@ -401,7 +485,7 @@ tet.run(ipyclient=ipyclient)
 # [####################] 100%  boot 100     | 0:47:22 |
 ```
 
-Note: the final version of this took a long time to run (several hours) on a laptop with 4 cores and 16GB of ram
+Note: the final version of this took a long time to run (several hours)
 
 Plotting
 ```{r eval=FALSE}
