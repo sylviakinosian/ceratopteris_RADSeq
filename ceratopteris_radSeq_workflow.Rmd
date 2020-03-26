@@ -36,8 +36,8 @@ verbose=YES                                 # additional job status info during 
 trace=YES                                   # additional info useful to the developer team: YES or NO
 ```
 
-Note: takes >1 hr to run on 1 core; 126GB RAM
-Remaining steps run within seconds.
+Note: takes ~1 hr to run on 1 core; 126GB RAM
+Remaining steps run in less than a minute.
 
 #### Building a library
 
