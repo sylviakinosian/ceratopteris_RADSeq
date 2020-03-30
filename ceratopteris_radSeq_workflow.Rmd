@@ -36,8 +36,7 @@ verbose=YES                                 # additional job status info during 
 trace=YES                                   # additional info useful to the developer team: YES or NO
 ```
 
-Note: takes ~1 hr to run on 1 core; 126GB RAM
-Remaining steps run in less than a minute.
+**Note**: takes ~1 hr to run on 1 core; 126GB RAM. Remaining steps run in less than a minute each.
 
 #### Building a library
 
@@ -166,6 +165,23 @@ get coverge info from this -->
 
 ## ipyrad
 
+We ran ipyrad steps 1 and 2 separately for our sequenced data, and also for our simulated data from the *C. richardii* genome. Then, we merged to two assemblies. Finally, we ran the remaining steps of ipyrad for all merged individuals. 
+
+```{bash eval=FALSE}
+# sequenced individuals
+ipyrad -p params-cer1.txt 12
+
+# similated digest of richardii genome
+ipyrad -p params-ra.txt 12
+
+# merging two assemblies
+ipyrad -m all params-cer1.txt params-richardii.txt
+
+# running program for all samples
+ipyrad -p params-all.txt -s 34567 -f
+```
+
+Parameters for sequenced data
 ```{bash eval=FALSE}
 ------- ipyrad params file (v.0.7.30)-------------------------------------------
 cer1                           ## [0] [assembly_name]: Assembly name. Used to name output directories
@@ -218,18 +234,6 @@ d <- read.csv("./structure/reads.raw.txt", sep = ',', header = T)
 hist(d[,2], main = "raw reads", xlab = "number of reads", breaks = 20)
 hist(d[,3], main = "number of loci in assembly", xlab = "number of loci", breaks = 20)
 ```
-
-We ran ipyrad steps 1 and 2 separately for our sequenced data, and also for our simulated data from the *C. richardii* genome. Then, we merged to two assemblies. Finally, we ran the remaining steps of ipyrad for all merged individuals. 
-
-```{bash eval=FALSE}
-ipyrad -p params-cer1.txt 12
-ipyrad -p params-ra.txt 12
-
-ipyrad -m all params-cer1.txt params-richardii.txt
-
-ipyrad -p params-all.txt -s 34567 -f
-```
-
 
 ## Population genetic analysis
 
@@ -690,4 +694,6 @@ Below is a list of all program versions used in this analysis. **Please note** t
 [Python 2.7.13](https://www.python.org/downloads/release/python-2713/)
 
 [R v. 3.5.2](https://www.r-project.org/)
+
+[stacks v. 2.4](http://catchenlab.life.illinois.edu/stacks/)
 
