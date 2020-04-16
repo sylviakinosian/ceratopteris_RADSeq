@@ -27,8 +27,8 @@ fragsfile=./results/fragments.fasta         # path of the fragments file
 rsfile=./restrictionsites.txt               # path of the restriction sites file
 enzyme1=PstI                                # id of 1st restriction enzyme used in rsfile or its restriction site sequence
 enzyme2=BfaI                                # id of 2nd restriction enzyme used in rsfile or its restriction site sequence
-minfragsize=250                             # lower boundary of loci fragment's size
-maxfragsize=350                             # upper boundary of loci fragment's size
+minfragsize=300                             # lower boundary of loci fragment's size
+maxfragsize=450                             # upper boundary of loci fragment's size
 fragstfile=./results/fragments-stats.txt    # path of the output statistics file
 fragstinterval=25                           # interval length of fragment size
 plot=YES                                    # statistical graphs: YES or NO
@@ -36,7 +36,7 @@ verbose=YES                                 # additional job status info during 
 trace=YES                                   # additional info useful to the developer team: YES or NO
 ```
 
-**Note**: takes ~1 hr to run on 1 core; 126GB RAM. Remaining steps run in less than a minute each.
+**Note**: takes ~30min to run on 1 core; 126GB RAM. Remaining steps run in less than a minute each.
 
 #### Building a library
 
@@ -59,8 +59,8 @@ dbrlen=0                                    # DBR sequence length (it must be 0 
 wend=end73                                  # code used in endsfile corresponding to the end where the adapter 1 is
 cend=end74                                  # code used in endsfile corresponding to the end where the adapter 2 is
 individualsfile=./individuals.txt           # path of individuals file
-locinum=1000                                # loci number to sample
-readsnum=100000                             # reads number
+locinum=10000000                              # loci number to sample
+readsnum=80000000                             # reads number
 minreadvar=0.8                              # lower variation on reads number per locus (0.5 <= minreadvar <= 1.0)
 maxreadvar=1.4                              # upper variation on reads number per locus (1.0 <= maxreadvar <= 1.5)
 insertlen=100                               # read length, i. e. genome sequence length inserted in reads
@@ -77,6 +77,10 @@ gcfactor=0.0                                # weight factor of GC ratio in a loc
 verbose=YES                                 # additional job status info during the run: YES or NO
 trace=NO                                    # additional info useful to the developer team: YES or NO
 ```
+
+Simulated sequences reads written: 1296795
+40m loci
+800m read --> 3421550 seqs
 
 #### Demultiplexing simulated reads
 
