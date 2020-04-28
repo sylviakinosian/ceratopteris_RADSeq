@@ -8,7 +8,7 @@ All data analysis except the data visualization were run on the University of Ut
 
 # {.tabset}
 
-## Simulation
+## Simulation - ddRADseqTools
 
 ### Retrieval of SNPs from the *Ceratopteris richardii* genome
 
@@ -35,6 +35,11 @@ plot=YES                                    # statistical graphs: YES or NO
 verbose=YES                                 # additional job status info during the run: YES or NO
 trace=YES                                   # additional info useful to the developer team: YES or NO
 ```
+
+rerun:
+minfrag=250
+maxfrag=350
+
 
 **Note**: takes ~30min to run on 1 core; 126GB RAM. Remaining steps run in less than a minute each.
 
@@ -78,9 +83,55 @@ verbose=YES                                 # additional job status info during 
 trace=NO                                    # additional info useful to the developer team: YES or NO
 ```
 
-Simulated sequences reads written: 1296795
-40m loci
-800m read --> 3421550 seqs
+**individuals.txt** - choose how many individuals to include in the simulation, options for replicates
+
+testing:
+#1
+- 1 individual
+- 1m loci
+- 10m reads
+- Simulated sequences reads written: 1663700
+- 1 locus for Ra00
+
+#2
+- 1 individual
+- 10m loci
+- 100m reads
+- Simulated sequences reads written: 1663507
+- 1 locus for Ra00
+
+#3
+- 1 individual
+- 10m loci
+- 60m reads
+- 150 read length (up from 100)
+- Simulated sequences reads written: 998270
+- 1 locus for Ra00
+
+#4
+- 1 ind
+- 150k loci
+- 1.5m reads
+- 150 bp read length
+- min & maxreadvar = 1
+- sim seqs: 1.5 m
+- 1 locus
+
+#4
+- 1.5m loci
+- 10.5m reads
+- sim seqs: 1663560
+- 1
+ ... min loci --> 20 = 1 locus
+
+#5
+- frags 250-350bp (rsitesearch change)
+- 1.5m loci
+- 10.5m reads
+- sim seqs: 1620890
+- locus
+
+
 
 #### Demultiplexing simulated reads
 
@@ -124,6 +175,15 @@ verbose=YES                           # additional job status info during the ru
 trace=NO                              # additional info useful to the developer team: YES or NO
 ```
 
+
+## Simulation - RADinitio 
+
+### radinitio
+
+```{bash eval=FALSE}
+radinitio --genome ../ref/fern.racon.fasta --chromosomes chrome.list --out-dir ./out/ --make-library-seq --make-pop-sim-dir ./pop/ --library-type ddRAD --enz PstI --enz2 BfaI --coverage 100 --read-length 150
+```
+ 
 ## Demultiplexing
 
 ### STACKS
@@ -646,6 +706,98 @@ legend(1.5, 400, legend = c("C. thalictroides 1", "C. thalictroides 2", "C. corn
 # trying to sort one column by another with the same names in a different order
 # m <- match(names[,1], c_names[,1])
 # match_names <- match_names[order(m),]
+```
+
+#### BUCKy
+
+Command line, on a server
+```{bash eval=FALSE}
+# start an interactive job
+srun -t 24:00:00 -n 24 -N 1 -A usubio-kp -p usubio-kp --pty /bin/bash -l
+
+# start ipcluster
+ipcluster start --n=24 --daemonize
+```
+
+mpiexec --mca opal_cuda_support 1
+
+Python
+```{perl eval=FALSE}
+import ipyrad.analysis as ipa
+import ipyparallel as ipp
+
+ipyclient = ipp.Client()
+print("connected to {} cores".format(len(ipyclient)))
+# connected to 24 cores
+
+samples = [
+    "AcAu",
+    "Cr03",
+    "Cr04",
+    "Cr05",
+    "Cr07",
+    "De01",
+    "Ga01",
+    "Ga02",
+    "Pt01",
+    "Pt02",
+    "Pt03",
+    "Pt04",
+    "Pt07",
+    "Pt08",
+    "Ra02",
+    "Ra03",
+    "Ra04",
+    "Sp01",
+    "Sp02",
+    "Th01",
+    "Th02",
+    "Th03",
+    "Th05",
+    "Th09",
+    "Th11",
+    "Th12",
+    "Th13",
+    "Th14",
+    "Th15",
+    "Th16",
+    "Th17",
+    "Th18",
+    "Th20",
+    "Th21",
+    "Th22",
+    "Th23",
+    "Th25", 
+    "Th26",
+    "Th27",
+    "Th28",
+    "Th29",
+    "Th31",
+    "Th33",
+    "Th35",
+    "Th36",
+    "Th37",
+    "Th38",
+    "Th39",
+    "Th41",
+    "Th42",
+    "Th43",
+    "Th44",
+    "Th45",
+    "Th46",
+    "Th47",
+    "Th48",
+    "Th49",
+    "Th50",
+    "Th51",
+]
+
+c = ipa.bucky(
+    name="og",
+    data="./og.alleles.loci",
+    workdir="analysis-bucky",
+)
+
 ```
 
 #### Map
