@@ -129,7 +129,20 @@ testing:
 - 1.5m loci
 - 10.5m reads
 - sim seqs: 1620890
-- locus
+- 2 loci
+
+#6
+- minread=0.8
+- maxread=1.4
+- insertlen=100
+- 40m loci
+- 800m reads
+- simseqs: 3566246
+- 2 loci
+
+#7
+same as above but insertlen=150
+- simseqs: 3568013
 
 
 
@@ -710,95 +723,9 @@ legend(1.5, 400, legend = c("C. thalictroides 1", "C. thalictroides 2", "C. corn
 
 #### BUCKy
 
-Command line, on a server
-```{bash eval=FALSE}
-# start an interactive job
-srun -t 24:00:00 -n 24 -N 1 -A usubio-kp -p usubio-kp --pty /bin/bash -l
+First run MrBayes, then BUCKy
 
-# start ipcluster
-ipcluster start --n=24 --daemonize
-```
 
-mpiexec --mca opal_cuda_support 1
-
-Python
-```{perl eval=FALSE}
-import ipyrad.analysis as ipa
-import ipyparallel as ipp
-
-ipyclient = ipp.Client()
-print("connected to {} cores".format(len(ipyclient)))
-# connected to 24 cores
-
-samples = [
-    "AcAu",
-    "Cr03",
-    "Cr04",
-    "Cr05",
-    "Cr07",
-    "De01",
-    "Ga01",
-    "Ga02",
-    "Pt01",
-    "Pt02",
-    "Pt03",
-    "Pt04",
-    "Pt07",
-    "Pt08",
-    "Ra02",
-    "Ra03",
-    "Ra04",
-    "Sp01",
-    "Sp02",
-    "Th01",
-    "Th02",
-    "Th03",
-    "Th05",
-    "Th09",
-    "Th11",
-    "Th12",
-    "Th13",
-    "Th14",
-    "Th15",
-    "Th16",
-    "Th17",
-    "Th18",
-    "Th20",
-    "Th21",
-    "Th22",
-    "Th23",
-    "Th25", 
-    "Th26",
-    "Th27",
-    "Th28",
-    "Th29",
-    "Th31",
-    "Th33",
-    "Th35",
-    "Th36",
-    "Th37",
-    "Th38",
-    "Th39",
-    "Th41",
-    "Th42",
-    "Th43",
-    "Th44",
-    "Th45",
-    "Th46",
-    "Th47",
-    "Th48",
-    "Th49",
-    "Th50",
-    "Th51",
-]
-
-c = ipa.bucky(
-    name="og",
-    data="./og.alleles.loci",
-    workdir="analysis-bucky",
-)
-
-```
 
 #### Map
 
