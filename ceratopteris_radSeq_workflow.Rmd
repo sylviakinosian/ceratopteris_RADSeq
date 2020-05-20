@@ -27,7 +27,7 @@ fragsfile=./results/fragments.fasta         # path of the fragments file
 rsfile=./restrictionsites.txt               # path of the restriction sites file
 enzyme1=PstI                                # id of 1st restriction enzyme used in rsfile or its restriction site sequence
 enzyme2=BfaI                                # id of 2nd restriction enzyme used in rsfile or its restriction site sequence
-minfragsize=300                             # lower boundary of loci fragment's size
+minfragsize=350                             # lower boundary of loci fragment's size
 maxfragsize=450                             # upper boundary of loci fragment's size
 fragstfile=./results/fragments-stats.txt    # path of the output statistics file
 fragstinterval=25                           # interval length of fragment size
@@ -35,11 +35,6 @@ plot=YES                                    # statistical graphs: YES or NO
 verbose=YES                                 # additional job status info during the run: YES or NO
 trace=YES                                   # additional info useful to the developer team: YES or NO
 ```
-
-rerun:
-minfrag=250
-maxfrag=350
-
 
 **Note**: takes ~30min to run on 1 core; 126GB RAM. Remaining steps run in less than a minute each.
 
@@ -143,8 +138,26 @@ testing:
 #7
 same as above but insertlen=150
 - simseqs: 3568013
+- nothing
+- inc. to ~200 with 1 ind per locus required
+
+#8
+same but with 350-450 frags
+- simseqs: 2010468
+- 4 inds per locus
+- 5 loci
+
+#9
+100-450bp frags
+- insertlen=150
+- simseqs: 9047554
+- clust threshold 0.80
 
 
+
+A small summary:
+- Longer (350-450BP) fragments yielf poorer results. Could be due to low quality of richardii genome
+- fewer individuals requird per locus increases loci retained. seems fragments from richardii are just very different than everything else
 
 #### Demultiplexing simulated reads
 
@@ -457,7 +470,7 @@ k7 <- k7[,-(1:5)]
 # names file includes individual ids, species names, and geographic locations
 names <- read.csv("names.txt", sep = ',', header = T)
 
-x <- as.data.frame(matrix(ncol = 32, nrow = 56))
+x <- as.data.frame(matrix(ncol = 20, nrow = 55))
 x[,1:2] <- k2
 x[,3:5] <- k3
 x[,6:9] <- k4
@@ -476,42 +489,46 @@ klist <- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[15:20], x[,21:27])
 # geography for k = 6
 #kglist <- list(g[15:20])
 
-structure_plot(x[,30], ninds = 56, klist)
+structure_plot(labels, xlabel, ninds, klist)
 
 #######################################################
 # functions needed
 ######################################################
 
 # plotting and labeling function
-structure_plot <- function(labels, ninds = 60, klist){
+# labels - species names
+# xlabels - specimen labels
+# ninds - number of individuals
+# klist - list of x values
+structure_plot <- function(labels, xlabels, ninds, klist){
+	
 	# define colors
 	cols <- c('#A8FFFD', '#A39D9D','#FFFF00', '#ff5a5a', '#69C261', '#26CDCD', '#B862D3','#C1C6FF')
+	
 	# unique label names
 	sp.names <- as.character(unique(labels))
-	#n <- as.data.frame(matrix(ncol = 1, nrow = ninds))
-	#n[,1] <- names
+	
 	# locations of each column
 	b <- as.data.frame(matrix(ncol = 1, nrow = ninds))
-	b[,1] <- barplot(t(klist[[1]][1]), beside= F, col= cols, cex.name= 1, cex.axis= 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
+	b[,1] <- barplot(t(klist[[1]][1]), beside = F, col = cols, cex.name = 1, cex.axis = 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
+	
 	# find locations for labels in the barplot
 	my.mean <- tapply(X = b[,1], INDEX = labels, mean)
 	my.min <- tapply(X = b[,1], INDEX = labels, min)
 	my.max <- tapply(X = b[,1], INDEX = labels, max)
+	
 	# data frame for plotting
 	d <- sp_labels(names = sp.names, min = my.min, mean = my.mean, max = my.max)
+	
 	# plot
-	plot_q_per_chain(klist)
-	text(cex = 1.5, x = (d[,2]-0.3), y = -0.7, labels = d[,1], xpd=NA, srt=50, font=3)
-	# lines
-	for (i in 1:length(d[,1])){
-		lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
-	}
-
+	plot_q_per_chain(klist, xlabel)
+	#text(cex = 1.5, x = (d[,2]-0.3), y = -0.7, labels = d[,1], xpd = NA, srt = 50, font = 3)
 }
 
 # create labels
 sp_labels <- function(names, min, mean, max, ...){
 	d <- as.data.frame(matrix(nrow = length(names), ncol = 4))
+	colnames(d) <- c("names", "min", "mean", "max")
 	for (j in 1:length(names)){
 			d[j,1] <- names[j]
 			d[j,3] <- min[[j]][1]
@@ -521,45 +538,58 @@ sp_labels <- function(names, min, mean, max, ...){
 	return(d)
 }
 
-# plot chains with species and geography labels 
-plot_q_per_chain <- function(kqlist, ...){
+# plot chains 
+plot_q_per_chain <- function(kqlist, xlabel, ...){
+	
 	# thalictroides 2, gaudichaudii, thalictroides 1, pteridoides, cornuta, misc, 
 	cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 
 	#cols <- c('#000075', '#E6194B', '#AAFFC3', '#FFE119', '#F58231', '#3CB44B')
+	
 	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
 	chain <- seq(1, length(kqlist), 1) 
-	for(i in 1:length(kqlist)){
-		barplot(t(kqlist[[i]]), beside= F, col= cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.2, cex.main = 1.6)
+	
+	# plot ks
+	for(i in 1:(length(kqlist)-1)){
+		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.2, cex.main = 1.6)
 		# y axis
 		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
+
+		# lines
+		for (i in 1:length(d[,1])){
+			lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
+			#lines(x = d[i,3:4] , y = rep(1.1, 2), lwd = 2.5, col = "black", xpd = NA, )
+		}
  	}
+
+	# plot last k with labels
+	for(i in length(kqlist)){
+		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, yaxt = 'n', main = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.1, cex.main = 1.6, names.arg = xlabel, las = 2)
+		# y axis
+		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
+
+		# lines
+		for (i in 1:length(d[,1])){
+			lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA, )
+		}
+ 	}
+
 }
 
 #structure_plot(labels = names[,4], ninds = 60, klist = k6list)
 
-############################################################################
-############################################################################
-# for k=5 only
-plot_k5 <- function(kqlist, ...){
-	cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 	
-	#cols <- c('#A8FFFD', '#B862D3','#A39D9D','#FFFF00', '#ff5a5a', '#69C261', '#26CDCD', '#C1C6FF') 	
-	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
-	chain <- seq(1, length(kqlist), 1) 
-	for(i in 1:length(kqlist)){
-		barplot(t(kqlist[[i]]), beside= F, col= cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = substitute(paste(italic(K)," = 5")), cex.lab = 1.6, cex.main = 2.0, ylab = "Proportion of genome")
-		# y axis
-		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
- 	}
-}
-
-plot_k5(k5list)
-
-# x axis, rotating labels
-text(cex = 1.7, x = (d[,2]-0.4), y = -0.3, labels = d[,1], xpd=NA, srt=50, font=3)
-
-for (i in 1:length(d[,1])){
-	lines(x = d[i,3:4] , y = rep(-0.05, 2), lwd = 2.5, col = "black", xpd = NA)
-}
+## plot ks - original function
+#	for(i in 1:length(kqlist)){
+#		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = paste("K =", chain[i]+1, sep = ' '), cex.lab = 1.2, cex.main = 1.6)
+#		# y axis
+#		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
+#
+#		# lines
+#		for (i in 1:length(d[,1])){
+#			#lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
+#			lines(x = d[i,3:4] , y = rep(1.1, 2), lwd = 2.5, col = "black", xpd = NA, )
+#		}
+# 	}
+#
 
 ```
 
@@ -573,7 +603,7 @@ Command line, on a server
 srun -t 24:00:00 -n 24 -N 1 -A usubio-kp -p usubio-kp --pty /bin/bash -l
 
 # start ipcluster
-ipcluster start --n=24 --daemonize
+ipcluster start --n=4 --daemonize
 ```
 
 Python
@@ -582,16 +612,15 @@ import ipyrad.analysis as ipa
 import ipyparallel as ipp
 import toytree
 
-ipyclient = ipp.Client()
+ipyclient = ipp.Client(cluster_id="tet")
 print("connected to {} cores".format(len(ipyclient)))
 # connected to 24 cores
 
 tet = ipa.tetrad(
-	name="cer",
-	seqfile="./og.snps.phy",
-	mapfile="./og.snps.map",
+	name='nr',
+	data="./nr.snps.hdf5",
 	nboots=50,
-	)
+)
 
 # loading seq array [57 taxa x 29849 bp]
 # max unlinked SNPs per quartet (nloci): 8602
@@ -602,6 +631,9 @@ tet.run(ipyclient=ipyclient)
 # [####################] 100%  initial tree | 0:00:33 |
 # [####################] 100%  boot 100     | 0:47:22 |
 ```
+
+**currently not working - something is wrong with the ipclient**
+check on gitter for updates
 
 Note: the final version of this took a long time to run (several hours)
 
@@ -725,8 +757,90 @@ legend(1.5, 400, legend = c("C. thalictroides 1", "C. thalictroides 2", "C. corn
 
 First run MrBayes, then BUCKy
 
+```{bash eval=FALSE}
+# in the MrBayes > prompt
+execute ig.nex
+lset nst=6 rates=invgamma
+mcmc ngen =1000000 samplefreq=500 printfreq=1000 diagnfreq=50000
+```
+
+```{perl eval=FALSE}
+import ipyrad.analysis as ipa
+import ipyparallel as ipp
+
+ipyclient = ipp.Client()
+print("{} engines found".format(len(ipyclient)))
+
+samples = [
+"AcAu",
+"Cr03",
+"Cr04",
+"Cr05",
+"Pt01",
+"Pt02",
+"Pt03",
+"Pt04",
+"Pt07",
+"Sp01",
+"Sp02",
+"Th01",
+"Th02",
+"Th03",
+"Th09",
+"Th11",
+"Th12",
+"Th13",
+"Th14",
+"Th15",
+"Th16",
+"Th17",
+"Th18",
+"Th20",
+"Th21",
+"Th22",
+"Th23",
+"Th25",
+"Th26",
+"Th27",
+"Th28",
+"Th29",
+"Th31",
+"Th33",
+"Th35",
+"Th36",
+"Th37",
+"Th38",
+"Th39",
+"Th41",
+"Th42",
+"Th43",
+"Th44",
+"Th45",
+"Th46",
+"Th47",
+"Th48",
+"Th49",
+"Th50",
+"Th51",
+]
 
 
+c = ipa.bucky(
+	name="buckytest",
+	data="./ig-nr.alleles.loci",
+	workdir="analysis-bucky",
+	samples=samples,
+	minsnps=0,
+	
+)
+
+c.params
+
+c.write_nexus_files(force=True)
+
+c.run(ipyclient=ipyclient, force=True)
+
+```
 #### Map
 
 ```{r eval=FALSE}
