@@ -453,6 +453,13 @@ We used the [Cluster Markov Packager Across K (CLUMMPAK)](http://clumpak.tau.ac.
 Visualization of STRUCTURE was done in R with a custom script.
 
 ```{r eval=FALSE}
+# get colors
+library(RColorBrewer)
+
+cols <- brewer.pal(10, "Paired")
+cols <- cols[c(1:4, 9:10)]
+# blue, green, purple
+
 # load in ks from clummpack files
 k2 <- read.csv("k2.txt", sep = '', header = F)
 k2 <- k2[,-(1:5)]
@@ -468,62 +475,54 @@ k7 <- read.csv("k7.txt", sep = '', header = F)
 k7 <- k7[,-(1:5)]
 
 # names file includes individual ids, species names, and geographic locations
-names <- read.csv("names.txt", sep = ',', header = T)
+names <- read.csv("names.csv", sep = ',', header = T)
 
-x <- as.data.frame(matrix(ncol = 20, nrow = 55))
+x <- as.data.frame(matrix(ncol = 26, nrow = 50))
 x[,1:2] <- k2
 x[,3:5] <- k3
 x[,6:9] <- k4
 x[,10:14] <- k5
 x[,15:20] <- k6
-x[,21:27] <- k7
-x[,28:32] <- names
+#x[,21:27] <- k7
+x[,21:26] <- names
 
 # order by species, then geography
-x <- x[order(x$V30, x$V32),]
+x <- x[order(x$V26),]
 
-# list for plotting
-klist <- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[15:20], x[,21:27])
-#k5list <- list(x[10:14])
+## find locations for each column, each species
+## variables
+# labels - species names
+# xlabels - specimen labels
+# ninds - number of individuals
+# klist - list of x values
 
-# geography for k = 6
-#kglist <- list(g[15:20])
+labels <- x[,23]
+x_lables <- x[,21]
+ninds <- 50
+klist <- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[15:20])
 
-structure_plot(labels, xlabel, ninds, klist)
+# each unique species names
+sp.names <- as.character(unique(labels))
+	
+# locations of each column, found via barplot column locations
+b <- as.data.frame(matrix(ncol = 1, nrow = ninds))
+b[,1] <- barplot(t(klist[[1]][1]), beside = F, col = c('black', 'white'), cex.name = 1, cex.axis = 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
+
+# find locations for labels in the barplot
+my.mean <- tapply(X = b[,1], INDEX = labels, mean)
+my.min <- tapply(X = b[,1], INDEX = labels, min)
+my.max <- tapply(X = b[,1], INDEX = labels, max)
+
+# data frame for plotting
+d <- sp_labels(names = sp.names, min = my.min, mean = my.mean, max = my.max)
+
+plot_chains_species(kqlist = k6list, xlabel = x_labels)
 
 #######################################################
 # functions needed
 ######################################################
 
 # plotting and labeling function
-# labels - species names
-# xlabels - specimen labels
-# ninds - number of individuals
-# klist - list of x values
-structure_plot <- function(labels, xlabels, ninds, klist){
-	
-	# define colors
-	cols <- c('#A8FFFD', '#A39D9D','#FFFF00', '#ff5a5a', '#69C261', '#26CDCD', '#B862D3','#C1C6FF')
-	
-	# unique label names
-	sp.names <- as.character(unique(labels))
-	
-	# locations of each column
-	b <- as.data.frame(matrix(ncol = 1, nrow = ninds))
-	b[,1] <- barplot(t(klist[[1]][1]), beside = F, col = cols, cex.name = 1, cex.axis = 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
-	
-	# find locations for labels in the barplot
-	my.mean <- tapply(X = b[,1], INDEX = labels, mean)
-	my.min <- tapply(X = b[,1], INDEX = labels, min)
-	my.max <- tapply(X = b[,1], INDEX = labels, max)
-	
-	# data frame for plotting
-	d <- sp_labels(names = sp.names, min = my.min, mean = my.mean, max = my.max)
-	
-	# plot
-	plot_q_per_chain(klist, xlabel)
-	#text(cex = 1.5, x = (d[,2]-0.3), y = -0.7, labels = d[,1], xpd = NA, srt = 50, font = 3)
-}
 
 # create labels
 sp_labels <- function(names, min, mean, max, ...){
@@ -539,10 +538,12 @@ sp_labels <- function(names, min, mean, max, ...){
 }
 
 # plot chains 
-plot_q_per_chain <- function(kqlist, xlabel, ...){
+plot_chains_ids <- function(kqlist, xlabel){
 	
+	# define colors
+	#cols <- c('#A8FFFD', '#A39D9D','#FFFF00', '#ff5a5a', '#69C261', '#26CDCD', '#B862D3','#C1C6FF')
 	# thalictroides 2, gaudichaudii, thalictroides 1, pteridoides, cornuta, misc, 
-	cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 
+	#cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 
 	#cols <- c('#000075', '#E6194B', '#AAFFC3', '#FFE119', '#F58231', '#3CB44B')
 	
 	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
@@ -556,7 +557,7 @@ plot_q_per_chain <- function(kqlist, xlabel, ...){
 
 		# lines
 		for (i in 1:length(d[,1])){
-			lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
+			lines(x = d[i,3:4] , y = rep(-0.09, 2), lwd = 2.5, col = "black", xpd = NA)
 			#lines(x = d[i,3:4] , y = rep(1.1, 2), lwd = 2.5, col = "black", xpd = NA, )
 		}
  	}
@@ -569,27 +570,43 @@ plot_q_per_chain <- function(kqlist, xlabel, ...){
 
 		# lines
 		for (i in 1:length(d[,1])){
-			lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA, )
+			lines(x = d[i,3:4] , y = rep(-0.09, 2), lwd = 2.5, col = "black", xpd = NA, )
 		}
  	}
 
 }
 
-#structure_plot(labels = names[,4], ninds = 60, klist = k6list)
 
-## plot ks - original function
-#	for(i in 1:length(kqlist)){
-#		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = paste("K =", chain[i]+1, sep = ' '), cex.lab = 1.2, cex.main = 1.6)
-#		# y axis
-#		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
-#
-#		# lines
-#		for (i in 1:length(d[,1])){
-#			#lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
-#			lines(x = d[i,3:4] , y = rep(1.1, 2), lwd = 2.5, col = "black", xpd = NA, )
-#		}
-# 	}
-#
+plot_chains_species <- function(kqlist, xlabel){
+	
+	# define colors 
+	cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 
+	#cols <- c('#000075', '#E6194B', '#AAFFC3', '#FFE119', '#F58231', '#3CB44B')
+	
+	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
+	chain <- seq(1, length(kqlist), 1) 
+
+	for(i in 1:length(kqlist)){
+		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', ylab = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.2, cex.main = 1.6)
+		# y axis
+		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
+
+		# lines
+		for (i in 1:length(d[,1])){
+			lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
+		}
+ 	}
+	# labels
+	text(cex = 1.3, x = (d[,2]-0.3), y = -0.7, labels = d[,1], xpd=NA, srt=50, font=3)
+}
+
+##############################
+# saving pdfs
+##############################
+
+pdf('k2-6_species.pdf', width = 10, height = 9)
+plot_chains_species(kqlist = k6list, xlabel = x_labels)
+dev.off()
 
 ```
 
@@ -603,7 +620,7 @@ Command line, on a server
 srun -t 24:00:00 -n 24 -N 1 -A usubio-kp -p usubio-kp --pty /bin/bash -l
 
 # start ipcluster
-ipcluster start --n=4 --daemonize
+ipcluster start --n=10 --daemonize
 ```
 
 Python
@@ -612,13 +629,13 @@ import ipyrad.analysis as ipa
 import ipyparallel as ipp
 import toytree
 
-ipyclient = ipp.Client(cluster_id="tet")
+ipyclient = ipp.Client()
 print("connected to {} cores".format(len(ipyclient)))
 # connected to 24 cores
 
 tet = ipa.tetrad(
 	name='nr',
-	data="./nr.snps.hdf5",
+	data="./og-nr.snps.hdf5",
 	nboots=50,
 )
 
@@ -632,10 +649,11 @@ tet.run(ipyclient=ipyclient)
 # [####################] 100%  boot 100     | 0:47:22 |
 ```
 
-**currently not working - something is wrong with the ipclient**
-check on gitter for updates
+#### RAxML
 
-Note: the final version of this took a long time to run (several hours)
+```{bash eval=FALSE}
+raxml -s ../og-nr.phy -n og-nr.out -m GTRCAT -f a -x $RANDOM -N 1000 -p $RANDOM -T 24
+```
 
 Plotting
 ```{r eval=FALSE}
@@ -644,7 +662,7 @@ library(phytools)
 # https://github.com/willpearse/willeerd
 library(willeerd)
 
-t <- read.tree(file.choose("cer.tree"))
+t <- read.tree("cer.tree")
 # Enter file name: cer.tree
 
 t
@@ -659,6 +677,21 @@ t <- root(phy=t, outgroup="AcAu", resolve.root=T)
 plot(t, cex = 0.8)
 
 t$tip.label <- as.character(cnames$str_sp)
+
+plotTree(t, ftype='off')
+nodelabels(frame="circ", bg="white", cex =0.8)
+cladelabels(t, c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1" ), c(61, 69, 64, 52), cex=0.8, offset=1.2, wing.length=0.7)
+
+painted<-paintSubTree(t, 61,"pteridoides")
+painted<-paintSubTree(painted,69,"thalictroides 2")
+painted<-paintSubTree(painted,64,"gaudichaudii")
+painted<-paintSubTree(painted,52,"thalictroides 1")
+
+plot(painted,ftype="off",lwd=3)
+## no colors provided. using the following legend:
+##         0   clade 1   clade 2   clade 3 
+##   "black" "#DF536B" "#61D04F" "#2297E6"
+cladelabels(tree, c("clade 1","clade 2","clade 3"), paintc(47,41,29), wing.length=0, offset=0.5)
 
 ################################################################
 # plot with geography
@@ -689,31 +722,28 @@ legend(1.5, 250, legend = c("Australia", "Central America", "North America", "So
 #####################################################################
 # plot with new names, derived from structure
 
-pdf("phy.pdf", width = 15, height = 10)
-plot(t, direction = 'up', show.tip.label = FALSE)
+pdf("phy0.pdf", width = 15, height = 13)
+plot(t, direction = "up", show.tip.label = FALSE)
 
 # thalictroides 1
-willeerd.tiplabels(tip = c(1:14, 15, 16, 18, 20, 49:57), pch = 21, col = "#000000", bg = "#AAFFC3", cex = 2)
+willeerd.tiplabels(tip = c(5, 27:50), pch = 21, col = "#000000", bg = "#AAFFC3", cex = 2)
 
 # thalictroides 2
-willeerd.tiplabels(tip = c(41:47), pch = 21, col = "#000000", bg = "#000075", cex = 2)
+willeerd.tiplabels(tip = c(19:26), pch = 21, col = "#000000", bg = "#000075", cex = 2)
 
 # cornuta
-willeerd.tiplabels(tip = c(19, 21, 22, 31, 32), pch = 21, col = '#000000', bg = "#F58231", cex = 2)
+willeerd.tiplabels(tip = c(2:4, 6), pch = 21, col = '#000000', bg = "#F58231", cex = 2)
 
 # pteridoides
-willeerd.tiplabels(tip = c(24:28), pch = 21, col = '#000000', bg = "#FFE119", cex = 2)
+willeerd.tiplabels(tip = c(7, 9:12), pch = 21, col = '#000000', bg = "#FFE119", cex = 2)
 
 # gaudichaudii
-willeerd.tiplabels(tip = c(33:40, 48), pch = 21, col = '#000000', bg = "#E6194B", cex = 2)
-
-# richardii
-willeerd.tiplabels(tip = c(17, 23, 29), pch = 21, col = '#000000', bg = "#3CB44B", cex = 2)
+willeerd.tiplabels(tip = c(1, 13:18), pch = 21, col = '#000000', bg = "#E6194B", cex = 2)
 
 # Acrostichum
-willeerd.tiplabels(tip = 30, pch = 21, col = '#000000', bg = "#800000", cex = 2)
+willeerd.tiplabels(tip = 8, pch = 21, col = '#000000', bg = "#800000", cex = 2)
 
-legend(1.5, 400, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides 1", "C. thalictroides 2", "A. aureum"), pch = 19, cex = 2, col = c("#E6194B", "#F58231", "#FFE119", "#3CB44B", "#AAFFC3", "#000075", "#800000"), bty= "n", text.font = 3)
+legend(1.5, 250, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides 1", "C. thalictroides 2", "A. aureum"), pch = 19, cex = 2, col = c("#E6194B", "#F58231", "#FFE119", "#3CB44B", "#AAFFC3", "#000075", "#800000"), bty= "n", text.font = 3)
 
 dev.off()
 
@@ -827,18 +857,29 @@ samples = [
 
 c = ipa.bucky(
 	name="buckytest",
-	data="./ig-nr.alleles.loci",
+	data="/media/kaiser/skinosian/paired/no-r/nr_outfiles/nr.alleles",
 	workdir="analysis-bucky",
 	samples=samples,
 	minsnps=0,
-	
+	maxloci=100,
 )
-
-c.params
 
 c.write_nexus_files(force=True)
 
 c.run(ipyclient=ipyclient, force=True)
+
+#########################
+
+mb = ipa.mrbayes(
+    name="mb-test",
+    data="ig-nr.nex",
+    clock=True,
+    ngen=5000000,
+    samplefreq=5000,
+    nruns=1,
+)
+
+mb.run(block=True, force=True)
 
 ```
 #### Map
@@ -875,6 +916,11 @@ points(p[14:16,5], p[14:16,4], col = "#000000", bg = "#FF59AC", cex = 2, pch = 2
 legend(-170, -2, legend = c("C. thalictroides 1", "C. thalictroides 2", "C. cornuta", "C. gaudichaudii", "C. pteridoides", "C. richardii"), bg = "white", pch = 19, cex = 1.5, col = c("#FFFF00", "#A8FFFD", "#A39D9D", "#69C261", "#B862D3", "#FF59AC"), text.font = 3)
 ```
 
+### Phylonet
+
+```{bash eval=FALSE}
+MLE_BiMarkers -pl 24 -mr 50
+```
 
 ## Program Versions
 
