@@ -343,9 +343,9 @@ ids <- read.csv("./HAD_ID.csv")
 het <- as.matrix(read.table("./hetAlleleDepth.txt", header = F))
 
 # allele a for each ind
-a <- seq(1, 112, 2)
+a <- seq(1, 100, 2)
 # allele b for each ind
-b <- seq(2, 112, 2)
+b <- seq(2, 100, 2)
 
 # retrieve entire column (ind) for each allele (row)
 cov1 <- het[,a]
@@ -375,11 +375,12 @@ propOut[1:2]
 # 0.66 0.0894613061 0.153616076 0.19248894 0.23176188 0.30600852
 # 0.75 0.3248250138 0.382064623 0.41320705 0.44262781 0.49606739
 
-# testing barplots
+################################
+# barplots
 dev.new()
 #pdf("g2p.pdf")
 par(mfrow = c(3, 3))
-for(i in c(1,5,7,10,28,56)){
+for(i in 1:50){
   barplot(propOut[[i]][3:5,3], ylim = c(0,1), axes = FALSE, xlab = "Allelic ratios", ylab = "Posterior proportions", xaxt = 'n')
   axis(1, at = c(0.7, 1.9, 3.1), labels = c("1:1", "2:1", "3:1"))
   axis(2)
@@ -388,6 +389,7 @@ for(i in c(1,5,7,10,28,56)){
   title(main = paste("sample name =", ids[[1]][i]))
 }
 dev.off()
+#################################
 
 # averages across species
 dev.new()
@@ -662,37 +664,135 @@ library(phytools)
 # https://github.com/willpearse/willeerd
 library(willeerd)
 
+# read in tree
 t <- read.tree("cer.tree")
-# Enter file name: cer.tree
 
-t
-# Phylogenetic tree with 48 tips and 47 internal nodes.
-
-#Tip labels:
-#	Pt03_R2_, Pt04_R2_, Pt02_R1_, Pt05_R1_, Pt06_R2_, Pt01_R2_, ...
-
-#Rooted; no branch lengths.
-
-t <- root(phy=t, outgroup="AcAu", resolve.root=T)
+# root tree
+t <- root(phy = t, outgroup = "AcAu", resolve.root = T)
 plot(t, cex = 0.8)
 
 t$tip.label <- as.character(cnames$str_sp)
+t$tip.label[32] <- "Acrostichum"
+t$tip.label[1:31] <- ""
+t$tip.label[33:51] <- ""
 
-plotTree(t, ftype='off')
-nodelabels(frame="circ", bg="white", cex =0.8)
-cladelabels(t, c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1" ), c(61, 69, 64, 52), cex=0.8, offset=1.2, wing.length=0.7)
+# plot tree with tip labels, node lables, to find clades
+plotTree(t, ftype = 'i')
+nodelabels(frame = "circ", bg = "white", cex = 0.8)
 
-painted<-paintSubTree(t, 61,"pteridoides")
-painted<-paintSubTree(painted,69,"thalictroides 2")
-painted<-paintSubTree(painted,64,"gaudichaudii")
-painted<-paintSubTree(painted,52,"thalictroides 1")
+# plot tree with no tip labels, clade labels only
+plotTree(t, ftype = 'i')
+cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(83, 94, 88, 76, 82, 78), cex = 0.8, offset = 1.2, wing.length = 0)
 
-plot(painted,ftype="off",lwd=3)
-## no colors provided. using the following legend:
-##         0   clade 1   clade 2   clade 3 
-##   "black" "#DF536B" "#61D04F" "#2297E6"
-cladelabels(tree, c("clade 1","clade 2","clade 3"), paintc(47,41,29), wing.length=0, offset=0.5)
+# define subtrees
+painted <- paintSubTree(tree = t, node = 83, "pteridoides", "0")
+painted <- paintSubTree(painted, 94, state = "thalictroides 2")
+painted <- paintSubTree(painted, 88, state = "gaudichaudii")
+painted <- paintSubTree(painted, 76, state = "thalictroides 1")
+painted <- paintSubTree(painted, 82, state = "cornuta")
+painted <- paintSubTree(painted, 78, state = "cornuta")
 
+# pteridoides, thal 2, gaudichaudii, thal 1, cornutax2
+cols <- c('#B862D3', '#000000', '#fff400', '#A8FFFD', '#A39D9D', '#69C261', '#69C261')
+names(cols) <- c("pteridoides", "0", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta")
+
+# plot painted tree with labels and node support
+plotSimmap(painted, cols, lwd = 3)
+cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(83, 94, 88, 76, 82, 78), cex = 1, offset = 1.2, wing.length = 0)
+edgelabels(t$edge.length, frame = 'none')
+
+
+# plot painted tree with clade labels
+plot(painted, ftype = "off", lwd = 2)
+alt_t <- force.ultrametric(tree = t)
+
+##########################################################
+# raxml tree
+
+plotTree(t, ftype = 'i')
+cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(96, 55, 90, 62, 88, 53), cex = 0.8, offset = 1.2, wing.length = 0)
+
+# define subtrees
+painted <- paintSubTree(tree = t, node = 96, "pteridoides", "0")
+painted <- paintSubTree(painted, 55, state = "thalictroides 2")
+painted <- paintSubTree(painted, 90, state = "gaudichaudii")
+painted <- paintSubTree(painted, 62, state = "thalictroides 1")
+painted <- paintSubTree(painted, 88, state = "cornuta")
+painted <- paintSubTree(painted, 53, state = "cornuta")
+
+# pteridoides, thal 2, gaudichaudii, thal 1, cornutax2
+cols <- c('#B862D3', '#000000', '#fff400', '#A8FFFD', '#A39D9D', '#69C261', '#69C261')
+names(cols) <- c("pteridoides", "0", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta")
+
+# plot painted tree with labels
+plotSimmap(painted, cols, lwd = 3)
+cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(96, 55, 90, 62, 88, 53), cex = 0.8, offset = 1.2, wing.length = 0)
+
+############################################################
+# cophylo
+
+# t = tetrad tree, r = raxml tree
+n <- cophylo(t, r)
+
+## left side, raxml tree
+# pteridoides 
+nodes <- getDescendants(n$trees[[1]], 51)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#B862D3'
+
+# fill in edges outside of pteridoides grade
+nodes <- getDescendants(n$trees[[1]], 55)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- 'black'
+
+# cornuta
+nodes <- getDescendants(n$trees[[1]], 98)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#69C261'
+
+nodes <- getDescendants(n$trees[[1]], 84)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#69C261'
+
+# thalictroides 1
+nodes <- getDescendants(n$trees[[1]], 58)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#A39D9D'
+
+# thalictroides 2
+nodes <- getDescendants(n$trees[[1]], 92)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#fff400'
+
+# gaudichaudii
+nodes <- getDescendants(n$trees[[1]], 86)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#A8FFFD'
+
+## right side, tetrad tree
+right <- rep("black", nrow(n$trees[[2]]$edge))
+
+# pteridoides 
+nodes <- getDescendants(n$trees[[2]], 97)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#B862D3'
+
+# cornuta
+nodes <- getDescendants(n$trees[[2]], 96)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#69C261'
+
+nodes <- getDescendants(n$trees[[2]], 81)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#69C261'
+
+# thalictroides 1
+nodes <- getDescendants(n$trees[[2]], 57)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#A39D9D'
+
+# thalictroides 2
+nodes <- getDescendants(n$trees[[2]], 90)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#fff400'
+
+# gaudichaudii
+nodes <- getDescendants(n$trees[[2]], 84)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#A8FFFD'
+
+# plotting
+edge.col <- list(left = left, right = right)
+plot(n, link.type = "curved", link.lty = "solid", fsize = 0.8, edge.col = edge.col, link.col = "grey", edge.width = 5)
+
+################################################################
 ################################################################
 # plot with geography
 
