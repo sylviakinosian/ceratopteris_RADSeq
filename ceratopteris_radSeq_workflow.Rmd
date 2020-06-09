@@ -80,81 +80,6 @@ trace=NO                                    # additional info useful to the deve
 
 **individuals.txt** - choose how many individuals to include in the simulation, options for replicates
 
-testing:
-#1
-- 1 individual
-- 1m loci
-- 10m reads
-- Simulated sequences reads written: 1663700
-- 1 locus for Ra00
-
-#2
-- 1 individual
-- 10m loci
-- 100m reads
-- Simulated sequences reads written: 1663507
-- 1 locus for Ra00
-
-#3
-- 1 individual
-- 10m loci
-- 60m reads
-- 150 read length (up from 100)
-- Simulated sequences reads written: 998270
-- 1 locus for Ra00
-
-#4
-- 1 ind
-- 150k loci
-- 1.5m reads
-- 150 bp read length
-- min & maxreadvar = 1
-- sim seqs: 1.5 m
-- 1 locus
-
-#4
-- 1.5m loci
-- 10.5m reads
-- sim seqs: 1663560
-- 1
- ... min loci --> 20 = 1 locus
-
-#5
-- frags 250-350bp (rsitesearch change)
-- 1.5m loci
-- 10.5m reads
-- sim seqs: 1620890
-- 2 loci
-
-#6
-- minread=0.8
-- maxread=1.4
-- insertlen=100
-- 40m loci
-- 800m reads
-- simseqs: 3566246
-- 2 loci
-
-#7
-same as above but insertlen=150
-- simseqs: 3568013
-- nothing
-- inc. to ~200 with 1 ind per locus required
-
-#8
-same but with 350-450 frags
-- simseqs: 2010468
-- 4 inds per locus
-- 5 loci
-
-#9
-100-450bp frags
-- insertlen=150
-- simseqs: 9047554
-- clust threshold 0.80
-
-
-
 A small summary:
 - Longer (350-450BP) fragments yielf poorer results. Could be due to low quality of richardii genome
 - fewer individuals requird per locus increases loci retained. seems fragments from richardii are just very different than everything else
@@ -199,15 +124,6 @@ readsfile2=./results/reads-2.fastq    # path of the Crick strand reads file in P
 trimfile=./results/reads-trimmed      # path of the output file with trimmed reads without extension
 verbose=YES                           # additional job status info during the run: YES or NO
 trace=NO                              # additional info useful to the developer team: YES or NO
-```
-
-
-## Simulation - RADinitio 
-
-### radinitio
-
-```{bash eval=FALSE}
-radinitio --genome ../ref/fern.racon.fasta --chromosomes chrome.list --out-dir ./out/ --make-library-seq --make-pop-sim-dir ./pop/ --library-type ddRAD --enz PstI --enz2 BfaI --coverage 100 --read-length 150
 ```
  
 ## Demultiplexing
@@ -791,6 +707,13 @@ right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '
 # plotting
 edge.col <- list(left = left, right = right)
 plot(n, link.type = "curved", link.lty = "solid", fsize = 0.8, edge.col = edge.col, link.col = "grey", edge.width = 5)
+
+################################################
+# Robinson-Foulds distance
+
+write.nexus(r, t, file = "2trees.nex")
+my.trees <- read.nexus("2trees.nex")
+rf <- multiRF(my.trees)
 
 ################################################################
 ################################################################
