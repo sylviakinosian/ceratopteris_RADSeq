@@ -8,6 +8,571 @@ All data analysis except the data visualization were run on the University of Ut
 
 # {.tabset}
 
+## Demultiplexing
+
+### STACKS
+
+stacks (v. 2.4) process\_radtags pipeline
+
+```{bash eval=FALSE}
+process_radtags -P -p /media/kaiser/skinosian/ceratopteris/raw/ -o ./fastqs/ -b barcodes.txt -c -q -r --inline_null --renz_1 pstI --renz_2 bfaI
+
+# 633816098 total reads; -71211474 ambiguous barcodes; -39790291 ambiguous RAD-Tags; +139518635 recovered; -47828 low quality reads; 522766505 retained reads.
+# Closing files, flushing buffers...
+# Outputing details to log: './fastqs/process_radtags.raw.log'
+
+# 633816098 total sequences
+#  71211474 barcode not found drops (11.2%)
+#     47828 low quality read drops (0.0%)
+#  39790291 RAD cutsite not found drops (6.3%)
+# 522766505 retained reads (82.5%)
+```
+
+get coverge info from this -->
+ ~/apps/stacks-2.4/ustacks -f ../fastqs/Cr03\_R1\_.fq.gz -i 1 -o ./ -p 10
+
+#### Parameter Descriptions
+
+**-p**: path to input files
+<br>
+**-P**, --paired: paired-end reads
+<br>
+**-o**: path to output files
+<br>
+**-b**: path to barcodes
+<br>
+**-c, --clean**: clean data, remove any read with an uncalled base
+<br>
+**-q, --quality**: discard reads with low quality scores (< 20)
+<br>
+**-r, -rescue**: rescue barcodes and RAD-Tags
+<br>
+**--index\_null:** Paired-end with index barcodes on the single and none on the paired-ends
+<br>
+**--renz\_1**, **--renz\_2:** double-digest restiction enzymes
+
+## ipyrad
+
+```{bash eval=FALSE}
+ipyrad -p params-all.txt -s 1234567 -f
+```
+
+Parameters for sequenced data
+```{bash eval=FALSE}
+------- ipyrad params file (v.0.9.52)-------------------------------------------
+cer                            ## [0] [assembly_name]: Assembly name. Used to name output directories
+./                             ## [1] [project_dir]: Project dir (made in curdir if not present)
+                               ## [2] [raw_fastq_path]: Location of raw non-demultiplexed fastq files
+                               ## [3] [barcodes_path]: Location of barcodes file
+./fastqs/*.fastq.gz            ## [4] [sorted_fastq_path]: Location of demultiplexed/sorted fastq files
+denovo                         ## [5] [assembly_method]: Assembly method 
+                               ## [6] [reference_sequence]: Location of reference sequence file
+pairddrad                      ## [7] [datatype]: Datatype (see docs): rad, gbs, ddrad, etc.
+TGCAG, TAG                     ## [8] [restriction_overhang]: Restriction overhang (cut1,) or (cut1, cut2)
+5                              ## [9] [max_low_qual_bases]: Max low quality base calls (Q<20) in a read
+33                             ## [10] [phred_Qscore_offset]: phred Q score offset (33 is default)
+6                              ## [11] [mindepth_statistical]: Min depth for statistical base calling
+6                              ## [12] [mindepth_majrule]: Min depth for majority-rule base calling
+10000                          ## [13] [maxdepth]: Max cluster depth within samples
+0.85                           ## [14] [clust_threshold]: Clustering threshold for de novo assembly
+0                              ## [15] [max_barcode_mismatch]: Max number of allowable mismatches in barcodes
+2                              ## [16] [filter_adapters]: Filter for adapters/primers (1 or 2=stricter)
+35                             ## [17] [filter_min_trim_len]: Min length of reads after adapter trim
+4                              ## [18] [max_alleles_consens]: Max alleles per site in consensus sequences
+0.05                           ## [19] [max_Ns_consens]: Max N's (uncalled bases) in consensus (R1, R2)
+0.05                           ## [20] [max_Hs_consens]: Max Hs (heterozygotes) in consensus (R1, R2)
+30                             ## [21] [min_samples_locus]: Min # samples per locus for output
+0.2                            ## [22] [max_SNPs_locus]: Max # SNPs per locus (R1, R2)
+8                              ## [23] [max_Indels_locus]: Max # of indels per locus (R1, R2)
+0.5                            ## [24] [max_shared_Hs_locus]: Max # heterozygous sites per locus (R1, R2)
+0, 0, 0, 0                     ## [25] [trim_reads]: Trim raw read edges (R1>, <R1, R2>, <R2) (see docs)
+0, 0, 0, 0                     ## [26] [trim_loci]: Trim locus edges (see docs) (R1>, <R1, R2>, <R2)
+*                              ## [27] [output_formats]: Output formats (see docs)
+                               ## [28] [pop_assign_file]: Path to population assignment file
+```
+
+#### Parameter Descriptions
+
+Full documentation for all ipyrad parameters can be found [here](https://ipyrad.readthedocs.io/parameters.html). Below are descriptions of a few key parameters that we chose in our analysis.
+
+[#5](https://ipyrad.readthedocs.io/parameters.html#assembly-method) **Assemby Method** - Since the current version of the *Ceratopteris* genome is relatively low coverage and low quality, we decided to use the *de novo* assembly option for our ddRAD data. ipyrad offers four different assembly methods; for the [denovo method](https://ipyrad.readthedocs.io/methods.html#assembly-methods), raw sequences are assembled without a reference; homology is inferred using [vsearch](https://github.com/torognes/vsearch)  <br>
+[#8](https://ipyrad.readthedocs.io/parameters.html#restriction-overhang) **Restriction Overhang** - We used the enzymes PstI and BfaI for our library preparation. [PstI](https://en.wikipedia.org/wiki/PstI) cuts at the 3' end, so you need to reverse compliment of the overhang: TGCAG. [BfaI](https://www.neb.com/products/R0568-BfaI#FAQs%20&%20Troubleshooting) cuts at the 5' end, so is simply: TAG.
+<br>
+[#16](https://ipyrad.readthedocs.io/parameters.html#filter-adapters) **Filter Adaptors** - We chose the most strict filtering option here, to remove not only barcodes, but Illumina and cutsite adaptors as well. During Step #2, reads are searched for the common Illumina adapter, plus the reverse complement of the second cut site (if present), plus the barcode (if present), and this part of the read is trimmed. 
+<br>
+[#21](https://ipyrad.readthedocs.io/parameters.html#min-samples-locus) **Min Samples per Locus** - This parameter sets the minimum number of samples that must have data for a given locus in the final data output. We chose to go with a relatively high number of minimum samples - 48 or half of the total samples. We wanted our final output file to have data from a at least half (if not a majority) of our individuals.
+
+#### Analysis of raw reads & loci
+
+```{r eval=TRUE}
+d <- read.csv("./structure/reads.raw.txt", sep = ',', header = T)
+
+hist(d[,2], main = "raw reads", xlab = "number of reads", breaks = 20)
+hist(d[,3], main = "number of loci in assembly", xlab = "number of loci", breaks = 20)
+```
+
+## Population genomic analyses
+
+#### gbs2ploidy
+
+I converted the VCF file output by ipyrad to the gbs2ploidy format with this [Python script](https://github.com/carol-rowe666/vcf2hetAlleleDepth) written by Carol Rowe.
+
+```{r eval=FALSE}
+library(gbs2ploidy)
+
+# load sample names
+ids <- read.csv("./HAD_ID.csv")
+
+# load hetAlleleDepth table
+# 56 samples with 2 alleles per samples = 112 columns
+# 29625 SNPs / rows
+het <- as.matrix(read.table("./hetAlleleDepth.txt", header = F))
+
+# allele a for each ind
+a <- seq(1, 100, 2)
+# allele b for each ind
+b <- seq(2, 100, 2)
+
+# retrieve entire column (ind) for each allele (row)
+cov1 <- het[,a]
+cov2 <- het[,b]
+
+# props = c(0.5, 0.66, 0.75) for last three proportions (our model)
+# estprops: this functions uses Markov chain Monte Carlo to obtain Bayesian estimates of allelic proportions, which denote that proportion of heterozygous GBS SNPs with different allelic ratios.
+propOut <- estprops(cov1 = cov1, cov2 = cov2, props = c(0.25, 0.33, 0.5, 0.66, 0.75), mcmc.nchain = 3, mcmc.steps = 10000, mcmc.burnin = 1000, mcmc.thin = 5)
+
+# estprops returns a list with one component per individual. Components summarize the posterior distributions for allelic proportions. 
+# Rows correspond to different allelic proportions (as defined by ‘props’)
+# Columns give the 2.5th, 25th, 50th, 75th, and 97.5th quantiles of the posterior distribution for each parameter
+propOut[1:2]
+# [[1]]
+#            2.5%        25%        50%        75%     97.5%
+# 0.25 0.02615469 0.04860941 0.06164483 0.07515569 0.1032398
+# 0.33 0.02585112 0.05159050 0.06680296 0.08333787 0.1192802
+# 0.5  0.13956566 0.18396947 0.20859096 0.23692481 0.2916249
+# 0.66 0.14647331 0.21795926 0.25814796 0.29713085 0.3730970
+# 0.75 0.31290242 0.36928452 0.39924378 0.43130653 0.4903253
+# 
+# [[2]]
+#              2.5%         25%        50%        75%      97.5%
+# 0.25 0.1109331672 0.133872341 0.14586992 0.15856786 0.18260319
+# 0.33 0.0005099962 0.005954433 0.01351898 0.02430852 0.05098758
+# 0.5  0.1668016464 0.208449542 0.23031057 0.25328263 0.29781157
+# 0.66 0.0894613061 0.153616076 0.19248894 0.23176188 0.30600852
+# 0.75 0.3248250138 0.382064623 0.41320705 0.44262781 0.49606739
+
+################################
+# barplots
+dev.new()
+#pdf("g2p.pdf")
+par(mfrow = c(4, 3))
+for(i in 1:50){
+  barplot(propOut[[i]][3:5,3], ylim = c(0,1), axes = FALSE, xlab = "Allelic ratios", ylab = "Posterior proportions", xaxt = 'n')
+  axis(1, at = c(0.7, 1.9, 3.1), labels = c("1:1", "2:1", "3:1"))
+  axis(2)
+  box()
+  segments(c(0.7, 1.9, 3.1), propOut[[i]][3:5,1], c(0.7, 1.9, 3.1), propOut[[i]][3:5,5])
+  title(main = paste("sample name =", ids[[1]][i]))
+}
+dev.off()
+```
+
+#### STRUCTURE
+
+The population genetics analysis program STRUCTURE (v. 2.3.4) was used to identify populations within the genus. For each k value, we ran 50 replicates (NOTE: include params files in github).
+
+We used the [Cluster Markov Packager Across K (CLUMMPAK)](http://clumpak.tau.ac.il/) to combine replicates within k values.
+
+Visualization of STRUCTURE was done in R with a custom script.
+
+```{r eval=FALSE}
+# load in ks from clummpack files
+k2 <- read.csv("k2.txt", sep = '', header = F)
+k2 <- k2[,-(1:5)]
+k3 <- read.csv("k3.txt", sep = '', header = F)
+k3 <- k3[,-(1:5)]
+k4 <- read.csv("k4.txt", sep = '', header = F)
+k4 <- k4[,-(1:5)]
+k5 <- read.csv("k5.txt", sep = '', header = F)
+k5 <- k5[,-(1:5)]
+k6 <- read.csv("k6.txt", sep = '', header = F)
+k6 <- k6[,-(1:5)]
+k7 <- read.csv("k7.txt", sep = '', header = F)
+k7 <- k7[,-(1:5)]
+
+# names file includes individual ids, species names, and geographic locations
+names <- read.csv("names.csv", sep = ',', header = T)
+
+x <- as.data.frame(matrix(ncol = 26, nrow = 50))
+x[,1:2] <- k2
+x[,3:5] <- k3
+x[,6:9] <- k4
+x[,10:14] <- k5
+x[,15:20] <- k6
+#x[,21:27] <- k7
+x[,21:26] <- names
+
+# order by species, then geography
+x <- x[order(x$V26),]
+
+## find locations for each column, each species
+## variables
+# labels - species names
+# xlabels - specimen labels
+# ninds - number of individuals
+# klist - list of x values
+
+labels <- x[,23]
+x_lables <- x[,21]
+ninds <- 55
+klist <- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[15:20])
+
+# each unique species names
+sp.names <- as.character(unique(labels))
+	
+# locations of each column, found via barplot column locations
+b <- as.data.frame(matrix(ncol = 1, nrow = ninds))
+b[,1] <- barplot(t(klist[[1]][1]), beside = F, col = c('black', 'white'), cex.name = 1, cex.axis = 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
+
+# find locations for labels in the barplot
+my.mean <- tapply(X = b[,1], INDEX = labels, mean)
+my.min <- tapply(X = b[,1], INDEX = labels, min)
+my.max <- tapply(X = b[,1], INDEX = labels, max)
+
+# data frame for plotting
+d <- sp_labels(names = sp.names, min = my.min, mean = my.mean, max = my.max)
+
+plot_chains_species(kqlist = klist, xlabel = x_labels)
+
+#######################################################
+# functions needed
+######################################################
+
+# plotting and labeling function
+
+# create labels
+sp_labels <- function(names, min, mean, max, ...){
+	d <- as.data.frame(matrix(nrow = length(names), ncol = 4))
+	colnames(d) <- c("names", "min", "mean", "max")
+	for (j in 1:length(names)){
+			d[j,1] <- names[j]
+			d[j,3] <- min[[j]][1]
+			d[j,2] <- mean[[j]][1]
+			d[j,4] <- max[[j]][1]
+	}
+	return(d)
+}
+
+# plot chains 
+plot_chains_ids <- function(kqlist, xlabel){
+	
+	# define colors
+	cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 
+	
+	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
+	chain <- seq(1, length(kqlist), 1) 
+	
+	# plot ks
+	for(i in 1:(length(kqlist)-1)){
+		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', ylab = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.2, cex.main = 1.6)
+		# y axis
+		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
+
+		# lines
+		for (i in 1:length(d[,1])){
+			lines(x = d[i,3:4] , y = rep(-0.09, 2), lwd = 2.5, col = "black", xpd = NA)
+			#lines(x = d[i,3:4] , y = rep(1.1, 2), lwd = 2.5, col = "black", xpd = NA, )
+		}
+ 	}
+
+	# plot last k with labels
+	for(i in length(kqlist)){
+		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, yaxt = 'n', ylab = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.1, cex.main = 1.6, names.arg = xlabel, las = 2)
+		# y axis
+		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
+
+		# lines
+		for (i in 1:length(d[,1])){
+			lines(x = d[i,3:4] , y = rep(-0.09, 2), lwd = 2.5, col = "black", xpd = NA, )
+		}
+ 	}
+
+}
+
+
+plot_chains_species <- function(kqlist, xlabel){
+	
+	# define colors 
+	cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 
+	#cols <- c('#000075', '#E6194B', '#AAFFC3', '#FFE119', '#F58231', '#3CB44B')
+	
+	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
+	chain <- seq(1, length(kqlist), 1) 
+
+	for(i in 1:length(kqlist)){
+		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', ylab = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.2, cex.main = 1.6)
+		# y axis
+		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
+
+		# lines
+		for (i in 1:length(d[,1])){
+			lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
+		}
+ 	}
+	# labels
+	text(cex = 1.3, x = (d[,2]-0.3), y = -0.7, labels = d[,1], xpd=NA, srt=50, font=3)
+}
+
+##############################
+# saving pdfs
+##############################
+
+pdf('k2-6_hnn_ids.pdf', width = 10, height = 9)
+plot_chains_ids(kqlist = klist, xlabel = x_labels)
+dev.off()
+
+```
+
+#### Tetrad
+
+ipyrad inferring quartet trees with [tetrad](https://nbviewer.jupyter.org/github/dereneaton/ipyrad/blob/master/tests/cookbook-quartet-species-tree.ipynb)
+
+Command line, on a server
+```{bash eval=FALSE}
+# start an interactive job
+srun -t 24:00:00 -n 24 -N 1 -A usubio-kp -p usubio-kp --pty /bin/bash -l
+
+# start ipcluster
+ipcluster start --n=10 --daemonize
+```
+
+Python
+```{perl eval=FALSE}
+import ipyrad.analysis as ipa
+import ipyparallel as ipp
+import toytree
+
+ipyclient = ipp.Client()
+print("connected to {} cores".format(len(ipyclient)))
+# connected to 24 cores
+
+tet = ipa.tetrad(
+	name='nr',
+	data="./og-nr.snps.hdf5",
+	nboots=50,
+)
+
+# loading seq array [57 taxa x 29849 bp]
+# max unlinked SNPs per quartet (nloci): 8602
+
+tet.run(ipyclient=ipyclient)
+# host comput node: [24 cores] on kp382
+# inferring 395010 induced quartet trees
+# [####################] 100%  initial tree | 0:00:33 |
+# [####################] 100%  boot 100     | 0:47:22 |
+```
+
+#### RAxML
+
+```{bash eval=FALSE}
+raxml -s ../og-nr.phy -n og-nr.out -m GTRCAT -f a -x $RANDOM -N 1000 -p $RANDOM -T 24
+```
+
+Plotting
+```{r eval=FALSE}
+library(ape)
+library(phytools)
+# https://github.com/willpearse/willeerd
+library(willeerd)
+
+# read in tree
+t <- read.tree("cer.tree")
+
+# root tree
+t <- root(phy = t, outgroup = "AcAu", resolve.root = T)
+plot(t, cex = 0.8)
+
+# hack to remove tip labels in final plot
+t$tip.label <- as.character(cnames$str_sp)
+t$tip.label[32] <- "Acrostichum"
+t$tip.label[1:31] <- ""
+t$tip.label[33:51] <- ""
+
+# plot tree with tip labels, node lables, to find clades
+plotTree(t, ftype = 'i')
+nodelabels(frame = "circ", bg = "white", cex = 0.8)
+
+# plot tree with no tip labels, clade labels only
+plotTree(t, ftype = 'i')
+cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(83, 94, 88, 76, 82, 78), cex = 0.8, offset = 1.2, wing.length = 0)
+
+t$tip.label <- rep("", 51)
+t$tip.label[32] <- "Acrostichum"
+
+# define subtrees
+painted <- paintSubTree(tree = t, node = 83, "pteridoides", "0")
+painted <- paintSubTree(painted, 94, state = "thalictroides 2")
+painted <- paintSubTree(painted, 88, state = "gaudichaudii")
+painted <- paintSubTree(painted, 76, state = "thalictroides 1")
+painted <- paintSubTree(painted, 82, state = "cornuta")
+painted <- paintSubTree(painted, 78, state = "cornuta")
+
+# pteridoides, thal 2, gaudichaudii, thal 1, cornuta x2
+cols <- c('#A39D9D', '#000000', '#f2f202', '#B862D3', '#a4f4f3','#69C261', '#69C261')
+names(cols) <- c("pteridoides", "0", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta")
+
+# plot painted tree with labels and node support
+plotSimmap(painted, cols, lwd = 3)
+cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(83, 94, 88, 76, 82, 78), cex = 1, offset = 1.2, wing.length = 0)
+# edgelabels(t$edge.length, frame = 'none')
+
+##########################################################
+# raxml tree
+
+plotTree(t, ftype = 'i')
+cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(96, 55, 90, 62, 88, 53), cex = 0.8, offset = 1.2, wing.length = 0)
+
+# define subtrees
+painted <- paintSubTree(tree = t, node = 96, "pteridoides", "0")
+painted <- paintSubTree(painted, 55, state = "thalictroides 2")
+painted <- paintSubTree(painted, 90, state = "gaudichaudii")
+painted <- paintSubTree(painted, 62, state = "thalictroides 1")
+painted <- paintSubTree(painted, 88, state = "cornuta")
+painted <- paintSubTree(painted, 53, state = "cornuta")
+
+# pteridoides, thal 2, gaudichaudii, thal 1, cornutax2
+cols <- c('#fff400', '#000000', '#fff400', '#A8FFFD', '#A39D9D', '#69C261', '#69C261')
+names(cols) <- c("pteridoides", "0", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta")
+
+# plot painted tree with labels
+plotSimmap(painted, cols, lwd = 3)
+cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(96, 55, 90, 62, 88, 53), cex = 0.8, offset = 1.2, wing.length = 0)
+
+############################################################
+# cophylo
+
+# t = tetrad tree, r = raxml tree
+t <- drop.tip(phy = t, tip = "AcAu")
+
+n <- cophylo(r, t)
+
+cols <- c('#A39D9D', '#000000', '#f2f202', '#B862D3', '#a4f4f3','#69C261', '#69C261')
+##################################
+## left side, raxml tree
+# pteridoides 
+nodes <- getDescendants(n$trees[[1]], 51)
+left <- rep("black", nrow(n$trees[[1]]$edge))
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#A39D9D'
+
+# fill in edges outside of pteridoides grade
+nodes <- getDescendants(n$trees[[1]], 55)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- 'black'
+
+# cornuta
+nodes <- getDescendants(n$trees[[1]], 98)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#69C261'
+
+nodes <- getDescendants(n$trees[[1]], 84)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#69C261'
+
+# thalictroides 1
+nodes <- getDescendants(n$trees[[1]], 58)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#a4f4f3'
+
+# thalictroides 2
+nodes <- getDescendants(n$trees[[1]], 92)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#f2f202'
+
+# gaudichaudii
+nodes <- getDescendants(n$trees[[1]], 86)
+left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#B862D3'
+
+#######################################
+## right side, tetrad tree
+right <- rep("black", nrow(n$trees[[2]]$edge))
+
+# pteridoides 
+nodes <- getDescendants(n$trees[[2]], 95)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#A39D9D'
+
+# cornuta
+nodes <- getDescendants(n$trees[[2]], 94)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#69C261'
+
+nodes <- getDescendants(n$trees[[2]], 79)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#69C261'
+
+# thalictroides 1
+nodes <- getDescendants(n$trees[[2]], 56)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#a4f4f3'
+
+# thalictroides 2
+nodes <- getDescendants(n$trees[[2]], 88)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#fff400'
+
+# gaudichaudii
+nodes <- getDescendants(n$trees[[2]], 82)
+right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#B862D3'
+
+# plotting
+edge.col <- list(left = left, right = right)
+plot(n, link.type = "curved", link.lty = "solid", fsize = 0.8, edge.col = edge.col, link.col = "grey", edge.width = 5)
+
+legend(1.5, 250, legend = c("RAxML tree - right", "TETRAD tree - left"), pch = 19, cex = 2, bty= "n", text.font = 3)
+
+################################################
+# Robinson-Foulds distance
+
+library(phangorn)
+
+r <- read.tree("raxml_rooted.tre")
+t <- read.tree("tetrad_rooted.tre")
+
+RF.dist(r, t, rooted = T)
+# 61
+RF.dist(r, t, rooted = T, normalize = T)
+# .06421053
+
+#############################################################
+# trying to sort one column by another with the same names in a different order
+# m <- match(names[,1], c_names[,1])
+# match_names <- match_names[order(m),]
+```
+
+#### Map
+
+```{r eval=FALSE}
+library(fields)
+
+# read in location data
+p <- read.csv("cer_locations.csv", header = T, sep = ',')
+
+# map
+map('world', fill = T, col = 'white', border = 'white', bg = 'lightgrey')
+
+# OW thalictroides, blue
+points(p[c(18:31, 33:35),5], p[c(18:31, 33:35),4], col = "#000000", bg = "#A8FFFD", cex = 2, pch = 21)
+
+# NW thalictroides, yellow
+points(p[c(17, 32, 36:39),5], p[c(17, 32, 36:39), 4], col = "#000000", bg = "#FFFF00", cex = 2, pch = 21)
+
+# cornuta, green
+points(p[2:5,5], p[2:5,4], col = "#000000", bg = "#69C261", cex = 2, pch = 21)
+
+# gaudichaudii, purple
+points(p[6:7,5], p[6:7,4], col = "#000000", bg = "#B862D3", cex = 2, pch = 21)
+
+# pteridoides, grey
+points(p[8:13,5], p[8:13,4], col = "#000000", bg = "#A39D9D", cex = 2, pch = 21)
+
+# richardii, pink
+points(p[14:16,5], p[14:16,4], col = "#000000", bg = "#FF59AC", cex = 2, pch = 21)
+
+#legend(-170, -2, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides"), bg = "white", pch = 19, cex = 1.5, col = c("#B862D3", "#69C261", "#FFFF00", "#FF59AC", "#A8FFFD"), text.font = 3)
+
+legend(-170, -2, legend = c("C. thalictroides 1", "C. thalictroides 2", "C. cornuta", "C. gaudichaudii", "C. pteridoides", "C. richardii"), bg = "white", pch = 19, cex = 1.5, col = c("#A8FFFD", "#FFFF00", "#69C261", "#B862D3", "#A39D9D", "#FF59AC"), text.font = 3)
+```
+
 ## Simulation - ddRADseqTools
 
 ### Retrieval of SNPs from the *Ceratopteris richardii* genome
@@ -126,840 +691,26 @@ verbose=YES                           # additional job status info during the ru
 trace=NO                              # additional info useful to the developer team: YES or NO
 ```
  
-## Demultiplexing
-
-### STACKS
-
-stacks (v. 2.4) process\_radtags pipeline
-
-```{bash eval=FALSE}
-process_radtags -P -p /media/kaiser/skinosian/ceratopteris/raw/ -o ./fastqs/ -b barcodes.txt -c -q -r --inline_null --renz_1 pstI --renz_2 bfaI
-
-# 633816098 total reads; -71211474 ambiguous barcodes; -39790291 ambiguous RAD-Tags; +139518635 recovered; -47828 low quality reads; 522766505 retained reads.
-# Closing files, flushing buffers...
-# Outputing details to log: './fastqs/process_radtags.raw.log'
-
-# 633816098 total sequences
-#  71211474 barcode not found drops (11.2%)
-#     47828 low quality read drops (0.0%)
-#  39790291 RAD cutsite not found drops (6.3%)
-# 522766505 retained reads (82.5%)
-```
-
-get coverge info from this -->
- ~/apps/stacks-2.4/ustacks -f ../fastqs/Cr03\_R1\_.fq.gz -i 1 -o ./ -p 10
-
-#### Parameter Descriptions
-
-**-p**: path to input files
-<br>
-**-P**, --paired: paired-end reads
-<br>
-**-o**: path to output files
-<br>
-**-b**: path to barcodes
-<br>
-**-c, --clean**: clean data, remove any read with an uncalled base
-<br>
-**-q, --quality**: discard reads with low quality scores (< 20)
-<br>
-**-r, -rescue**: rescue barcodes and RAD-Tags
-<br>
-**--index\_null:** Paired-end with index barcodes on the single and none on the paired-ends
-<br>
-**--renz\_1**, **--renz\_2:** double-digest restiction enzymes
-
-## ipyrad
-
-We ran ipyrad steps 1 and 2 separately for our sequenced data, and also for our simulated data from the *C. richardii* genome. Then, we merged to two assemblies. Finally, we ran the remaining steps of ipyrad for all merged individuals. 
-
-```{bash eval=FALSE}
-# sequenced individuals
-ipyrad -p params-cer1.txt 12
-
-# similated digest of richardii genome
-ipyrad -p params-ra.txt 12
-
-# merging two assemblies
-ipyrad -m all params-cer1.txt params-richardii.txt
-
-# running program for all samples
-ipyrad -p params-all.txt -s 34567 -f
-```
-
-Parameters for sequenced data
-```{bash eval=FALSE}
-------- ipyrad params file (v.0.7.30)-------------------------------------------
-cer1                           ## [0] [assembly_name]: Assembly name. Used to name output directories
-./                             ## [1] [project_dir]: Project dir (made in curdir if not present)
-                               ## [2] [raw_fastq_path]: Location of raw non-demultiplexed fastq files
-                               ## [3] [barcodes_path]: Location of barcodes file
-../fastqs/*.fastq.gz           ## [4] [sorted_fastq_path]: Location of demultiplexed/sorted fastq files
-denovo                         ## [5] [assembly_method]: Assembly method 
-                               ## [6] [reference_sequence]: Location of reference sequence file
-pairddrad                      ## [7] [datatype]: Datatype (see docs): rad, gbs, ddrad, etc.
-TGCAG, TAG                     ## [8] [restriction_overhang]: Restriction overhang (cut1,) or (cut1, cut2)
-5                              ## [9] [max_low_qual_bases]: Max low quality base calls (Q<20) in a read
-33                             ## [10] [phred_Qscore_offset]: phred Q score offset (33 is default)
-6                              ## [11] [mindepth_statistical]: Min depth for statistical base calling
-6                              ## [12] [mindepth_majrule]: Min depth for majority-rule base calling
-10000                          ## [13] [maxdepth]: Max cluster depth within samples
-0.90                           ## [14] [clust_threshold]: Clustering threshold for de novo assembly
-0                              ## [15] [max_barcode_mismatch]: Max number of allowable mismatches in barcodes
-2                              ## [16] [filter_adapters]: Filter for adapters/primers (1 or 2=stricter)
-35                             ## [17] [filter_min_trim_len]: Min length of reads after adapter trim
-2                              ## [18] [max_alleles_consens]: Max alleles per site in consensus sequences
-5, 5                           ## [19] [max_Ns_consens]: Max N's (uncalled bases) in consensus (R1, R2)
-8, 8                           ## [20] [max_Hs_consens]: Max Hs (heterozygotes) in consensus (R1, R2)
-48                             ## [21] [min_samples_locus]: Min # samples per locus for output
-20, 20                         ## [22] [max_SNPs_locus]: Max # SNPs per locus (R1, R2)
-8, 8                           ## [23] [max_Indels_locus]: Max # of indels per locus (R1, R2)
-0.5                            ## [24] [max_shared_Hs_locus]: Max # heterozygous sites per locus (R1, R2)
-0, 0, 0, 0                     ## [25] [trim_reads]: Trim raw read edges (R1>, <R1, R2>, <R2) (see docs)
-0, 0, 0, 0                     ## [26] [trim_loci]: Trim locus edges (see docs) (R1>, <R1, R2>, <R2)
-*                              ## [27] [output_formats]: Output formats (see docs)
-                               ## [28] [pop_assign_file]: Path to population assignment file
-```
-
-#### Parameter Descriptions
-
-Full documentation for all ipyrad parameters can be found [here](https://ipyrad.readthedocs.io/parameters.html). Below are descriptions of a few key parameters that we chose in our analysis.
-
-[#5](https://ipyrad.readthedocs.io/parameters.html#assembly-method) **Assemby Method** - Since the current version of the *Ceratopteris* genome is relatively low coverage and low quality, we decided to use the *de novo* assembly option for our ddRAD data. ipyrad offers four different assembly methods; for the [denovo method](https://ipyrad.readthedocs.io/methods.html#assembly-methods), raw sequences are assembled without a reference; homology is inferred using [vsearch](https://github.com/torognes/vsearch)  <br>
-[#8](https://ipyrad.readthedocs.io/parameters.html#restriction-overhang) **Restriction Overhang** - We used the enzymes PstI and BfaI for our library preparation. [PstI](https://en.wikipedia.org/wiki/PstI) cuts at the 3' end, so you need to reverse compliment of the overhang: TGCAG. [BfaI](https://www.neb.com/products/R0568-BfaI#FAQs%20&%20Troubleshooting) cuts at the 5' end, so is simply: TAG.
-<br>
-[#16](https://ipyrad.readthedocs.io/parameters.html#filter-adapters) **Filter Adaptors** - We chose the most strict filtering option here, to remove not only barcodes, but Illumina and cutsite adaptors as well. During Step #2, reads are searched for the common Illumina adapter, plus the reverse complement of the second cut site (if present), plus the barcode (if present), and this part of the read is trimmed. 
-<br>
-[#21](https://ipyrad.readthedocs.io/parameters.html#min-samples-locus) **Min Samples per Locus** - This parameter sets the minimum number of samples that must have data for a given locus in the final data output. We chose to go with a relatively high number of minimum samples - 48 or half of the total samples. We wanted our final output file to have data from a at least half (if not a majority) of our individuals.
-
-#### Analysis of raw reads & loci
-
-```{r eval=TRUE}
-d <- read.csv("./structure/reads.raw.txt", sep = ',', header = T)
-
-hist(d[,2], main = "raw reads", xlab = "number of reads", breaks = 20)
-hist(d[,3], main = "number of loci in assembly", xlab = "number of loci", breaks = 20)
-```
-
-## Population genetic analysis
-
-#### gbs2ploidy
-
-I converted the VCF file output by ipyrad to the gbs2ploidy format with this [Python script](https://github.com/carol-rowe666/vcf2hetAlleleDepth) written by Carol Rowe.
-
-```{r eval=FALSE}
-library(gbs2ploidy)
-
-# load sample names
-ids <- read.csv("./HAD_ID.csv")
-
-# load hetAlleleDepth table
-# 56 samples with 2 alleles per samples = 112 columns
-# 29625 SNPs / rows
-het <- as.matrix(read.table("./hetAlleleDepth.txt", header = F))
-
-# allele a for each ind
-a <- seq(1, 100, 2)
-# allele b for each ind
-b <- seq(2, 100, 2)
-
-# retrieve entire column (ind) for each allele (row)
-cov1 <- het[,a]
-cov2 <- het[,b]
-
-# props = c(0.5, 0.66, 0.75) for last three proportions (our model)
-# estprops: this functions uses Markov chain Monte Carlo to obtain Bayesian estimates of allelic proportions, which denote that proportion of heterozygous GBS SNPs with different allelic ratios.
-propOut <- estprops(cov1 = cov1, cov2 = cov2, props = c(0.25, 0.33, 0.5, 0.66, 0.75), mcmc.nchain = 3, mcmc.steps = 10000, mcmc.burnin = 1000, mcmc.thin = 5)
-
-# estprops returns a list with one component per individual. Components summarize the posterior distributions for allelic proportions. 
-# Rows correspond to different allelic proportions (as defined by ‘props’)
-# Columns give the 2.5th, 25th, 50th, 75th, and 97.5th quantiles of the posterior distribution for each parameter
-propOut[1:2]
-# [[1]]
-#            2.5%        25%        50%        75%     97.5%
-# 0.25 0.02615469 0.04860941 0.06164483 0.07515569 0.1032398
-# 0.33 0.02585112 0.05159050 0.06680296 0.08333787 0.1192802
-# 0.5  0.13956566 0.18396947 0.20859096 0.23692481 0.2916249
-# 0.66 0.14647331 0.21795926 0.25814796 0.29713085 0.3730970
-# 0.75 0.31290242 0.36928452 0.39924378 0.43130653 0.4903253
-# 
-# [[2]]
-#              2.5%         25%        50%        75%      97.5%
-# 0.25 0.1109331672 0.133872341 0.14586992 0.15856786 0.18260319
-# 0.33 0.0005099962 0.005954433 0.01351898 0.02430852 0.05098758
-# 0.5  0.1668016464 0.208449542 0.23031057 0.25328263 0.29781157
-# 0.66 0.0894613061 0.153616076 0.19248894 0.23176188 0.30600852
-# 0.75 0.3248250138 0.382064623 0.41320705 0.44262781 0.49606739
-
-################################
-# barplots
-dev.new()
-#pdf("g2p.pdf")
-par(mfrow = c(3, 3))
-for(i in 1:50){
-  barplot(propOut[[i]][3:5,3], ylim = c(0,1), axes = FALSE, xlab = "Allelic ratios", ylab = "Posterior proportions", xaxt = 'n')
-  axis(1, at = c(0.7, 1.9, 3.1), labels = c("1:1", "2:1", "3:1"))
-  axis(2)
-  box()
-  segments(c(0.7, 1.9, 3.1), propOut[[i]][3:5,1], c(0.7, 1.9, 3.1), propOut[[i]][3:5,5])
-  title(main = paste("sample name =", ids[[1]][i]))
-}
-dev.off()
-#################################
-
-# averages across species
-dev.new()
-pdf("sp_avg.pdf")
-par(mfrow = c(3, 3))
-for(i in 1:6){
-  barplot(avgs[i,2:4], ylim = c(0,1), axes = FALSE, xlab = "Allelic ratios", ylab = "Posterior proportions", xaxt = 'n')
-  axis(1, at = c(0.7, 1.9, 3.1), labels = c("1:1", "2:1", "3:1"))
-  axis(2)
-  box()
-  #segments(c(0.7, 1.9, 3.1), propOut[[i]][3:5,1], c(0.7, 1.9, 3.1), propOut[[i]][3:5,5])
-  title(main = avgs[i,1])
-}
-dev.off()
-
-# testing other plots
-#dev.new()
-#par(mfrow = c(3, 3))
-#for(i in 1:56){
-#  plot(propOut[[i]][,3], ylim = c(0,1), axes = FALSE, xlab = "ratios", ylab = "proportions")
-#  axis(1, at = 1:5, c("1:3", "1:2", "1:1", "2:1", "3:1"))
-#  axis(2)
-#  box()
-#  segments(1:5, propOut[[i]][,1], 1:5, propOut[[i]][,5])
-#  title(main = paste("sample name =", ids[[1]][i]))
-#}
-#dev.off()
-#
-#dev.new()
-#par(mfrow = c(3, 3))
-#for(i in c(1,3,4,7,10,15,28,29,56)){
-#  plot(propOut[[i]][,3], ylim = c(0,1), axes = FALSE, xlab = "ratios", ylab = "proportions")
-#  axis(1, at = 1:3, c("1:1", "2:1", "3:1"))
-#  axis(2)
-#  box()
-#  segments(1:5, propOut[[i]][,1], 1:5, propOut[[i]][,5])
-#  title(main = paste("sample name =", ids[[1]][i]))
-#}
-#dev.off()
-
-gau <- c(6,7,23:25,37,38,41,45)
-
-for(i in 1:56){
-  subProp[[i]][1:3,1:3] <- propOut[[i]][3:5,c(1,3,5)]
-}
-
-############################
-# estploidy
-# Use principal component analysis (PCA) and discriminant analysis (DA) to assign individuals to different cytotype groups based on GBS data. This function can be run with or without a training set of individuals with known cytotypes.
-
-h <- apply(is.na(cov1) == FALSE, 2, mean)
-d <- apply(cov1 + cov2, 2, mean, na.rm = TRUE)
-
-ep <- estploidy(alphas = propOut, het = h, depth = d, train = FALSE, pl = NA, set = NA, nclasses = 3, ids = ids, pcs = 1:2)
-```
-
-#### STRUCTURE
-
-The population genetics analysis program STRUCTURE (v. 2.3.4) was used to identify populations within the genus. For each k value, we ran 50 replicates (NOTE: include params files in github).
-
-We used the [Cluster Markov Packager Across K (CLUMMPAK)](http://clumpak.tau.ac.il/) to combine replicates within k values.
-
-Visualization of STRUCTURE was done in R with a custom script.
-
-```{r eval=FALSE}
-# get colors
-library(RColorBrewer)
-
-cols <- brewer.pal(10, "Paired")
-cols <- cols[c(1:4, 9:10)]
-# blue, green, purple
-
-# load in ks from clummpack files
-k2 <- read.csv("k2.txt", sep = '', header = F)
-k2 <- k2[,-(1:5)]
-k3 <- read.csv("k3.txt", sep = '', header = F)
-k3 <- k3[,-(1:5)]
-k4 <- read.csv("k4.txt", sep = '', header = F)
-k4 <- k4[,-(1:5)]
-k5 <- read.csv("k5.txt", sep = '', header = F)
-k5 <- k5[,-(1:5)]
-k6 <- read.csv("k6.txt", sep = '', header = F)
-k6 <- k6[,-(1:5)]
-k7 <- read.csv("k7.txt", sep = '', header = F)
-k7 <- k7[,-(1:5)]
-
-# names file includes individual ids, species names, and geographic locations
-names <- read.csv("names.csv", sep = ',', header = T)
-
-x <- as.data.frame(matrix(ncol = 26, nrow = 50))
-x[,1:2] <- k2
-x[,3:5] <- k3
-x[,6:9] <- k4
-x[,10:14] <- k5
-x[,15:20] <- k6
-#x[,21:27] <- k7
-x[,21:26] <- names
-
-# order by species, then geography
-x <- x[order(x$V26),]
-
-## find locations for each column, each species
-## variables
-# labels - species names
-# xlabels - specimen labels
-# ninds - number of individuals
-# klist - list of x values
-
-labels <- x[,23]
-x_lables <- x[,21]
-ninds <- 50
-klist <- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[15:20])
-
-# each unique species names
-sp.names <- as.character(unique(labels))
-	
-# locations of each column, found via barplot column locations
-b <- as.data.frame(matrix(ncol = 1, nrow = ninds))
-b[,1] <- barplot(t(klist[[1]][1]), beside = F, col = c('black', 'white'), cex.name = 1, cex.axis = 1.2, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', cex.lab = 1, cex.main = 2)
-
-# find locations for labels in the barplot
-my.mean <- tapply(X = b[,1], INDEX = labels, mean)
-my.min <- tapply(X = b[,1], INDEX = labels, min)
-my.max <- tapply(X = b[,1], INDEX = labels, max)
-
-# data frame for plotting
-d <- sp_labels(names = sp.names, min = my.min, mean = my.mean, max = my.max)
-
-plot_chains_species(kqlist = k6list, xlabel = x_labels)
-
-#######################################################
-# functions needed
-######################################################
-
-# plotting and labeling function
-
-# create labels
-sp_labels <- function(names, min, mean, max, ...){
-	d <- as.data.frame(matrix(nrow = length(names), ncol = 4))
-	colnames(d) <- c("names", "min", "mean", "max")
-	for (j in 1:length(names)){
-			d[j,1] <- names[j]
-			d[j,3] <- min[[j]][1]
-			d[j,2] <- mean[[j]][1]
-			d[j,4] <- max[[j]][1]
-	}
-	return(d)
-}
-
-# plot chains 
-plot_chains_ids <- function(kqlist, xlabel){
-	
-	# define colors
-	#cols <- c('#A8FFFD', '#A39D9D','#FFFF00', '#ff5a5a', '#69C261', '#26CDCD', '#B862D3','#C1C6FF')
-	# thalictroides 2, gaudichaudii, thalictroides 1, pteridoides, cornuta, misc, 
-	#cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 
-	#cols <- c('#000075', '#E6194B', '#AAFFC3', '#FFE119', '#F58231', '#3CB44B')
-	
-	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
-	chain <- seq(1, length(kqlist), 1) 
-	
-	# plot ks
-	for(i in 1:(length(kqlist)-1)){
-		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', main = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.2, cex.main = 1.6)
-		# y axis
-		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
-
-		# lines
-		for (i in 1:length(d[,1])){
-			lines(x = d[i,3:4] , y = rep(-0.09, 2), lwd = 2.5, col = "black", xpd = NA)
-			#lines(x = d[i,3:4] , y = rep(1.1, 2), lwd = 2.5, col = "black", xpd = NA, )
-		}
- 	}
-
-	# plot last k with labels
-	for(i in length(kqlist)){
-		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, yaxt = 'n', main = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.1, cex.main = 1.6, names.arg = xlabel, las = 2)
-		# y axis
-		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
-
-		# lines
-		for (i in 1:length(d[,1])){
-			lines(x = d[i,3:4] , y = rep(-0.09, 2), lwd = 2.5, col = "black", xpd = NA, )
-		}
- 	}
-
-}
-
-
-plot_chains_species <- function(kqlist, xlabel){
-	
-	# define colors 
-	cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF') 
-	#cols <- c('#000075', '#E6194B', '#AAFFC3', '#FFE119', '#F58231', '#3CB44B')
-	
-	par(mfrow = c(length(kqlist),1), mar = c(1,3,3,1) + 0.1, oma = c(15,0,0,0), mgp = c(1,1,0))
-	chain <- seq(1, length(kqlist), 1) 
-
-	for(i in 1:length(kqlist)){
-		barplot(t(kqlist[[i]]), beside = F, col = cols, border = 1, space = 0.05, xaxt = 'n', yaxt = 'n', ylab = paste("k =", chain[i]+1, sep = ' '), cex.lab = 1.2, cex.main = 1.6)
-		# y axis
-		axis(2, at = c(0, 0.25, 0.5, 0.75, 1), cex.axis = 1, las = 2, pos = -0.2)
-
-		# lines
-		for (i in 1:length(d[,1])){
-			lines(x = d[i,3:4] , y = rep(-0.1, 2), lwd = 2.5, col = "black", xpd = NA)
-		}
- 	}
-	# labels
-	text(cex = 1.3, x = (d[,2]-0.3), y = -0.7, labels = d[,1], xpd=NA, srt=50, font=3)
-}
-
-##############################
-# saving pdfs
-##############################
-
-pdf('k2-6_species.pdf', width = 10, height = 9)
-plot_chains_species(kqlist = k6list, xlabel = x_labels)
-dev.off()
-
-```
-
-#### Tetrad
-
-ipyrad inferring quartet trees with [tetrad](https://nbviewer.jupyter.org/github/dereneaton/ipyrad/blob/master/tests/cookbook-quartet-species-tree.ipynb)
-
-Command line, on a server
-```{bash eval=FALSE}
-# start an interactive job
-srun -t 24:00:00 -n 24 -N 1 -A usubio-kp -p usubio-kp --pty /bin/bash -l
-
-# start ipcluster
-ipcluster start --n=10 --daemonize
-```
-
-Python
-```{perl eval=FALSE}
-import ipyrad.analysis as ipa
-import ipyparallel as ipp
-import toytree
-
-ipyclient = ipp.Client()
-print("connected to {} cores".format(len(ipyclient)))
-# connected to 24 cores
-
-tet = ipa.tetrad(
-	name='nr',
-	data="./og-nr.snps.hdf5",
-	nboots=50,
-)
-
-# loading seq array [57 taxa x 29849 bp]
-# max unlinked SNPs per quartet (nloci): 8602
-
-tet.run(ipyclient=ipyclient)
-# host comput node: [24 cores] on kp382
-# inferring 395010 induced quartet trees
-# [####################] 100%  initial tree | 0:00:33 |
-# [####################] 100%  boot 100     | 0:47:22 |
-```
-
-#### RAxML
-
-```{bash eval=FALSE}
-raxml -s ../og-nr.phy -n og-nr.out -m GTRCAT -f a -x $RANDOM -N 1000 -p $RANDOM -T 24
-```
-
-Plotting
-```{r eval=FALSE}
-library(ape)
-library(phytools)
-# https://github.com/willpearse/willeerd
-library(willeerd)
-
-# read in tree
-t <- read.tree("cer.tree")
-
-# root tree
-t <- root(phy = t, outgroup = "AcAu", resolve.root = T)
-plot(t, cex = 0.8)
-
-t$tip.label <- as.character(cnames$str_sp)
-t$tip.label[32] <- "Acrostichum"
-t$tip.label[1:31] <- ""
-t$tip.label[33:51] <- ""
-
-# plot tree with tip labels, node lables, to find clades
-plotTree(t, ftype = 'i')
-nodelabels(frame = "circ", bg = "white", cex = 0.8)
-
-# plot tree with no tip labels, clade labels only
-plotTree(t, ftype = 'i')
-cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(83, 94, 88, 76, 82, 78), cex = 0.8, offset = 1.2, wing.length = 0)
-
-# define subtrees
-painted <- paintSubTree(tree = t, node = 83, "pteridoides", "0")
-painted <- paintSubTree(painted, 94, state = "thalictroides 2")
-painted <- paintSubTree(painted, 88, state = "gaudichaudii")
-painted <- paintSubTree(painted, 76, state = "thalictroides 1")
-painted <- paintSubTree(painted, 82, state = "cornuta")
-painted <- paintSubTree(painted, 78, state = "cornuta")
-
-# pteridoides, thal 2, gaudichaudii, thal 1, cornutax2
-cols <- c('#B862D3', '#000000', '#fff400', '#A8FFFD', '#A39D9D', '#69C261', '#69C261')
-names(cols) <- c("pteridoides", "0", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta")
-
-# plot painted tree with labels and node support
-plotSimmap(painted, cols, lwd = 3)
-cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(83, 94, 88, 76, 82, 78), cex = 1, offset = 1.2, wing.length = 0)
-edgelabels(t$edge.length, frame = 'none')
-
-
-# plot painted tree with clade labels
-plot(painted, ftype = "off", lwd = 2)
-alt_t <- force.ultrametric(tree = t)
-
-##########################################################
-# raxml tree
-
-plotTree(t, ftype = 'i')
-cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(96, 55, 90, 62, 88, 53), cex = 0.8, offset = 1.2, wing.length = 0)
-
-# define subtrees
-painted <- paintSubTree(tree = t, node = 96, "pteridoides", "0")
-painted <- paintSubTree(painted, 55, state = "thalictroides 2")
-painted <- paintSubTree(painted, 90, state = "gaudichaudii")
-painted <- paintSubTree(painted, 62, state = "thalictroides 1")
-painted <- paintSubTree(painted, 88, state = "cornuta")
-painted <- paintSubTree(painted, 53, state = "cornuta")
-
-# pteridoides, thal 2, gaudichaudii, thal 1, cornutax2
-cols <- c('#B862D3', '#000000', '#fff400', '#A8FFFD', '#A39D9D', '#69C261', '#69C261')
-names(cols) <- c("pteridoides", "0", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta")
-
-# plot painted tree with labels
-plotSimmap(painted, cols, lwd = 3)
-cladelabels(tree = t, text = c("pteridoides", "thalictroides 2", "gaudichaudii", "thalictroides 1", "cornuta", "cornuta"), node = c(96, 55, 90, 62, 88, 53), cex = 0.8, offset = 1.2, wing.length = 0)
-
-############################################################
-# cophylo
-
-# t = tetrad tree, r = raxml tree
-n <- cophylo(t, r)
-
-## left side, raxml tree
-# pteridoides 
-nodes <- getDescendants(n$trees[[1]], 51)
-left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#B862D3'
-
-# fill in edges outside of pteridoides grade
-nodes <- getDescendants(n$trees[[1]], 55)
-left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- 'black'
-
-# cornuta
-nodes <- getDescendants(n$trees[[1]], 98)
-left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#69C261'
-
-nodes <- getDescendants(n$trees[[1]], 84)
-left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#69C261'
-
-# thalictroides 1
-nodes <- getDescendants(n$trees[[1]], 58)
-left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#A39D9D'
-
-# thalictroides 2
-nodes <- getDescendants(n$trees[[1]], 92)
-left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#fff400'
-
-# gaudichaudii
-nodes <- getDescendants(n$trees[[1]], 86)
-left[sapply(nodes, function(x, y) which(y==x), y = n$trees[[1]]$edge[,2])] <- '#A8FFFD'
-
-## right side, tetrad tree
-right <- rep("black", nrow(n$trees[[2]]$edge))
-
-# pteridoides 
-nodes <- getDescendants(n$trees[[2]], 97)
-right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#B862D3'
-
-# cornuta
-nodes <- getDescendants(n$trees[[2]], 96)
-right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#69C261'
-
-nodes <- getDescendants(n$trees[[2]], 81)
-right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#69C261'
-
-# thalictroides 1
-nodes <- getDescendants(n$trees[[2]], 57)
-right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#A39D9D'
-
-# thalictroides 2
-nodes <- getDescendants(n$trees[[2]], 90)
-right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#fff400'
-
-# gaudichaudii
-nodes <- getDescendants(n$trees[[2]], 84)
-right[sapply(nodes, function(x, y) which(y==x), y = n$trees[[2]]$edge[,2])] <- '#A8FFFD'
-
-# plotting
-edge.col <- list(left = left, right = right)
-plot(n, link.type = "curved", link.lty = "solid", fsize = 0.8, edge.col = edge.col, link.col = "grey", edge.width = 5)
-
-################################################
-# Robinson-Foulds distance
-
-write.nexus(r, t, file = "2trees.nex")
-my.trees <- read.nexus("2trees.nex")
-rf <- multiRF(my.trees)
-
-################################################################
-################################################################
-# plot with geography
-
-plot(c, direction = "up", show.tip.label = FALSE)
-
-# Australia
-willeerd.tiplabels(tip = c(15, 33, 39, 40:52), pch = 21,  col = '#000000', bg ='#000000', cex = 1.2)
-# #FFFF00
-
-# Central America
-willeerd.tiplabels(tip = c(2,5,20,21,56:58), pch = 21, col = '#000000', bg ='#4363D8', cex = 1.2)
-
-# North America
-willeerd.tiplabels(tip = c(4,6:8, 10:12, 17, 25:28, 35), pch = 21, col = '#000000', bg ='#911EB4', cex = 1.2)
-
-# South America
-willeerd.tiplabels(tip = c(9, 22, 24, 34, 36:38), pch = 21, col = '#000000', bg ='#F032E6', cex = 1.2)
-
-# Asia
-willeerd.tiplabels(tip = c(1,3,11,13,14,16,18,19,23,53:55,59,60,61), pch = 21, col = '#000000', bg ='#A9A9A9', cex = 1.2)
-
-# Africa
-willeerd.tiplabels(tip = c(29:32), pch = 21, col = '#000000', bg = '#42D4F4', cex = 1.2)
-
-legend(1.5, 250, legend = c("Australia", "Central America", "North America", "South America", "Asia", "Africa"), pch = 19, cex = 1.5, col = c("#000000", "#4363D8", "#911EB4", "#F032E6", "#A9A9A9", "#42D4F4"))
-
-#####################################################################
-# plot with new names, derived from structure
-
-pdf("phy0.pdf", width = 15, height = 13)
-plot(t, direction = "up", show.tip.label = FALSE)
-
-# thalictroides 1
-willeerd.tiplabels(tip = c(5, 27:50), pch = 21, col = "#000000", bg = "#AAFFC3", cex = 2)
-
-# thalictroides 2
-willeerd.tiplabels(tip = c(19:26), pch = 21, col = "#000000", bg = "#000075", cex = 2)
-
-# cornuta
-willeerd.tiplabels(tip = c(2:4, 6), pch = 21, col = '#000000', bg = "#F58231", cex = 2)
-
-# pteridoides
-willeerd.tiplabels(tip = c(7, 9:12), pch = 21, col = '#000000', bg = "#FFE119", cex = 2)
-
-# gaudichaudii
-willeerd.tiplabels(tip = c(1, 13:18), pch = 21, col = '#000000', bg = "#E6194B", cex = 2)
-
-# Acrostichum
-willeerd.tiplabels(tip = 8, pch = 21, col = '#000000', bg = "#800000", cex = 2)
-
-legend(1.5, 250, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides 1", "C. thalictroides 2", "A. aureum"), pch = 19, cex = 2, col = c("#E6194B", "#F58231", "#FFE119", "#3CB44B", "#AAFFC3", "#000075", "#800000"), bty= "n", text.font = 3)
-
-dev.off()
-
-#######################
-plot(t, direction = 'up', show.tip.label = FALSE)
-
-# thalictroides 2, gaudichaudii, thalictroides 1, pteridoides, cornuta, misc, 
-	#cols <- c('#A8FFFD','#B862D3', '#A39D9D','#FFFF00', '#69C261', '#FF59AC', '#26CDCD',  '#C1C6FF')
-
-# thalictroides 1
-willeerd.tiplabels(tip = c(1:14, 15, 16, 18, 20, 49:57), pch = 21, col = '#000000', bg = "#FFFF00", cex = 2.5)
-
-# thalictroides 2
-willeerd.tiplabels(tip = c(41:47), pch = 21, col = "#000000", bg = "#A8FFFD", cex = 2.5)
-
-# cornuta
-willeerd.tiplabels(tip = c(19, 21, 22, 31, 32), pch = 21, col = '#000000', bg = "#A39D9D", cex = 2.5)
-
-# pteridoides
-willeerd.tiplabels(tip = c(24:28), pch = 21, col = '#000000', bg = "#B862D3", cex = 2.5)
-
-# gaudichaudii
-willeerd.tiplabels(tip = c(33:40, 48), pch = 21, col = '#000000', bg = "#69C261", cex = 2.5)
-
-# richardii
-willeerd.tiplabels(tip = c(17, 23, 29), pch = 21, col = '#000000', bg = "#FF59AC", cex = 2.5)
-
-# Acrostichum
-willeerd.tiplabels(tip = 30, pch = 21, col = '#000000', bg = "#800000", cex = 2.5)
-
-legend(1.5, 400, legend = c("C. thalictroides 1", "C. thalictroides 2", "C. cornuta", "C. gaudichaudii", "C. pteridoides", "C. richardii", "A. aureum"), pch = 19, cex = 2, col = c("#FFFF00", "#A8FFFD", "#A39D9D",  "#69C261", "#B862D3", "#FF59AC", "#800000"), bty= "n", text.font = 3)
-
-
-#############################################################
-# trying to sort one column by another with the same names in a different order
-# m <- match(names[,1], c_names[,1])
-# match_names <- match_names[order(m),]
-```
-
-#### BUCKy
-
-First run MrBayes, then BUCKy
-
-```{bash eval=FALSE}
-# in the MrBayes > prompt
-execute ig.nex
-lset nst=6 rates=invgamma
-mcmc ngen =1000000 samplefreq=500 printfreq=1000 diagnfreq=50000
-```
-
-```{perl eval=FALSE}
-import ipyrad.analysis as ipa
-import ipyparallel as ipp
-
-ipyclient = ipp.Client()
-print("{} engines found".format(len(ipyclient)))
-
-samples = [
-"AcAu",
-"Cr03",
-"Cr04",
-"Cr05",
-"Pt01",
-"Pt02",
-"Pt03",
-"Pt04",
-"Pt07",
-"Sp01",
-"Sp02",
-"Th01",
-"Th02",
-"Th03",
-"Th09",
-"Th11",
-"Th12",
-"Th13",
-"Th14",
-"Th15",
-"Th16",
-"Th17",
-"Th18",
-"Th20",
-"Th21",
-"Th22",
-"Th23",
-"Th25",
-"Th26",
-"Th27",
-"Th28",
-"Th29",
-"Th31",
-"Th33",
-"Th35",
-"Th36",
-"Th37",
-"Th38",
-"Th39",
-"Th41",
-"Th42",
-"Th43",
-"Th44",
-"Th45",
-"Th46",
-"Th47",
-"Th48",
-"Th49",
-"Th50",
-"Th51",
-]
-
-
-c = ipa.bucky(
-	name="buckytest",
-	data="/media/kaiser/skinosian/paired/no-r/nr_outfiles/nr.alleles",
-	workdir="analysis-bucky",
-	samples=samples,
-	minsnps=0,
-	maxloci=100,
-)
-
-c.write_nexus_files(force=True)
-
-c.run(ipyclient=ipyclient, force=True)
-
-#########################
-
-mb = ipa.mrbayes(
-    name="mb-test",
-    data="ig-nr.nex",
-    clock=True,
-    ngen=5000000,
-    samplefreq=5000,
-    nruns=1,
-)
-
-mb.run(block=True, force=True)
-
-```
-#### Map
-
-```{r eval=FALSE}
-library(fields)
-
-# read in location data
-p <- read.csv("cer_locations.csv", header = T, sep = ',')
-
-# map
-map('world', fill = T, col = 'white', border = 'white', bg = 'lightgrey')
-
-# OW thalictroides
-points(p[c(18:31, 33:35),5], p[c(18:31, 33:35),4], col = "#000000", bg = "#FFFF00", cex = 2, pch = 21)
-
-# NW thalictroides
-points(p[c(17, 32, 36:39),5], p[c(17, 32, 36:39), 4], col = "#000000", bg = "#A8FFFD", cex = 2, pch = 21)
-
-# cornuta
-points(p[2:5,5], p[2:5,4], col = "#000000", bg = "#A39D9D", cex = 2, pch = 21)
-
-# gaudichaudii
-points(p[6:7,5], p[6:7,4], col = "#000000", bg = "#69C261", cex = 2, pch = 21)
-
-#pteridoides
-points(p[8:13,5], p[8:13,4], col = "#000000", bg = "#B862D3", cex = 2, pch = 21)
-
-# richardii
-points(p[14:16,5], p[14:16,4], col = "#000000", bg = "#FF59AC", cex = 2, pch = 21)
-
-#legend(-170, -2, legend = c("C. gaudichaudii", "C. cornuta", "C. pteridoides", "C. richardii", "C. thalictroides"), bg = "white", pch = 19, cex = 1.5, col = c("#B862D3", "#69C261", "#FFFF00", "#FF59AC", "#A8FFFD"), text.font = 3)
-
-legend(-170, -2, legend = c("C. thalictroides 1", "C. thalictroides 2", "C. cornuta", "C. gaudichaudii", "C. pteridoides", "C. richardii"), bg = "white", pch = 19, cex = 1.5, col = c("#FFFF00", "#A8FFFD", "#A39D9D", "#69C261", "#B862D3", "#FF59AC"), text.font = 3)
-```
-
-### Phylonet
-
-```{bash eval=FALSE}
-MLE_BiMarkers -pl 24 -mr 50
-```
-
 ## Program Versions
 
 Below is a list of all program versions used in this analysis. **Please note** that newer versions of these software packages *may* work for this pipeline, but be aware that usage often changes with new verions. 
 
-[ipyrad](https://ipyrad.readthedocs.io/) [release: 0.7.30](https://github.com/dereneaton/ipyrad/releases/tag/0.7.30)
+[stacks v. 2.4](http://catchenlab.life.illinois.edu/stacks/)
+
+[ipyrad](https://ipyrad.readthedocs.io/) [release: 0.7.30](https://github.com/dereneaton/ipyrad/releases/tag/0.9.52)
 
 [STRUCTURE v.2.3.4](https://web.stanford.edu/group/pritchardlab/structure_software/release_versions/v2.3.4/html/structure.html)
 
 [Cluster Markov Packager Across K (CLUMMPAK)](http://clumpak.tau.ac.il/) 
 
+[TETRAD](https://github.com/eaton-lab/tetrad)
+
+[RAxML 8.2.11](https://github.com/stamatak/standard-RAxML)
+
+[ddRADseqTools](https://github.com/GGFHF/ddRADseqTools)
+
 [Perl 5](https://www.perl.org/)
 
 [Python 2.7.13](https://www.python.org/downloads/release/python-2713/)
 
-[R v. 3.5.2](https://www.r-project.org/)
-
-[stacks v. 2.4](http://catchenlab.life.illinois.edu/stacks/)
-
+[R v. 3.6.3](https://www.r-project.org/)
