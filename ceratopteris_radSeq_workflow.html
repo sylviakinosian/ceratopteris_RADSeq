@@ -526,19 +526,20 @@ k7 &lt;- read.csv(&quot;k7.txt&quot;, sep = '', header = F)
 k7 &lt;- k7[,-(1:5)]
 
 # names file includes individual ids, species names, and geographic locations
-names &lt;- read.csv(&quot;names.csv&quot;, sep = ',', header = T)
+names &lt;- read.csv(&quot;names.csv&quot;, sep = ',', header = F)
 
-x &lt;- as.data.frame(matrix(ncol = 26, nrow = 50))
+x &lt;- as.data.frame(matrix(ncol = 23, nrow = 108))
 x[,1:2] &lt;- k2
 x[,3:5] &lt;- k3
 x[,6:9] &lt;- k4
 x[,10:14] &lt;- k5
 x[,15:20] &lt;- k6
 #x[,21:27] &lt;- k7
-x[,21:26] &lt;- names
+x[,21:23] &lt;- names[,1:3]
+x[,24] &lt;- names[,6]
 
 # order by species, then geography
-x &lt;- x[order(x$V26),]
+x &lt;- x[order(x[,24]),]
 
 ## find locations for each column, each species
 ## variables
@@ -549,8 +550,8 @@ x &lt;- x[order(x$V26),]
 
 labels &lt;- x[,23]
 x_lables &lt;- x[,21]
-ninds &lt;- 55
-klist &lt;- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[15:20])
+ninds &lt;- 108
+klist &lt;- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[,15:20])
 
 # each unique species names
 sp.names &lt;- as.character(unique(labels))
@@ -664,7 +665,7 @@ dev.off()</code></pre>
 srun -t 24:00:00 -n 24 -N 1 -A usubio-kp -p usubio-kp --pty /bin/bash -l
 
 # start ipcluster
-ipcluster start --n=10 --daemonize</code></pre>
+ipcluster start --n=24 --daemonize</code></pre>
 <p>Python</p>
 <pre class="perl"><code>import ipyrad.analysis as ipa
 import ipyparallel as ipp
@@ -677,6 +678,12 @@ print(&quot;connected to {} cores&quot;.format(len(ipyclient)))
 tet = ipa.tetrad(
     name='nr',
     data=&quot;./og-nr.snps.hdf5&quot;,
+    nboots=50,
+)
+
+tet = ipa.tetrad(
+    name='nh',
+    data=&quot;../nr_rev.snps.hdf5&quot;,
     nboots=50,
 )
 
@@ -983,6 +990,18 @@ trimfile=./results/reads-trimmed      # path of the output file with trimmed rea
 verbose=YES                           # additional job status info during the run: YES or NO
 trace=NO                              # additional info useful to the developer team: YES or NO</code></pre>
 </div>
+</div>
+</div>
+<div id="reticulate-evolution" class="section level2">
+<h2>Reticulate evolution</h2>
+<div id="splitstree" class="section level3">
+<h3>SplitsTree</h3>
+<p>Command File</p>
+<pre class="bash"><code>xvfb-run --auto-servernum --server-num=1 ~/apps/splitstree4/SplitsTree -g --commandFile cmds.txt --verbose</code></pre>
+</div>
+<div id="d-statistics" class="section level3">
+<h3>D-statistics</h3>
+<pre class="bash"><code>Dsuite Dtrios og-nr.vcf SETS.txt</code></pre>
 </div>
 </div>
 <div id="program-versions" class="section level2">

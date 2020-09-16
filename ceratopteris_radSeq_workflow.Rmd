@@ -201,19 +201,20 @@ k7 <- read.csv("k7.txt", sep = '', header = F)
 k7 <- k7[,-(1:5)]
 
 # names file includes individual ids, species names, and geographic locations
-names <- read.csv("names.csv", sep = ',', header = T)
+names <- read.csv("names.csv", sep = ',', header = F)
 
-x <- as.data.frame(matrix(ncol = 26, nrow = 50))
+x <- as.data.frame(matrix(ncol = 23, nrow = 108))
 x[,1:2] <- k2
 x[,3:5] <- k3
 x[,6:9] <- k4
 x[,10:14] <- k5
 x[,15:20] <- k6
 #x[,21:27] <- k7
-x[,21:26] <- names
+x[,21:23] <- names[,1:3]
+x[,24] <- names[,6]
 
 # order by species, then geography
-x <- x[order(x$V26),]
+x <- x[order(x[,24]),]
 
 ## find locations for each column, each species
 ## variables
@@ -224,8 +225,8 @@ x <- x[order(x$V26),]
 
 labels <- x[,23]
 x_lables <- x[,21]
-ninds <- 55
-klist <- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[15:20])
+ninds <- 108
+klist <- list(x[,1:2], x[,3:5], x[,6:9], x[,10:14], x[,15:20])
 
 # each unique species names
 sp.names <- as.character(unique(labels))
@@ -343,7 +344,7 @@ Command line, on a server
 srun -t 24:00:00 -n 24 -N 1 -A usubio-kp -p usubio-kp --pty /bin/bash -l
 
 # start ipcluster
-ipcluster start --n=10 --daemonize
+ipcluster start --n=24 --daemonize
 ```
 
 Python
@@ -359,6 +360,12 @@ print("connected to {} cores".format(len(ipyclient)))
 tet = ipa.tetrad(
 	name='nr',
 	data="./og-nr.snps.hdf5",
+	nboots=50,
+)
+
+tet = ipa.tetrad(
+	name='nh',
+	data="../nr_rev.snps.hdf5",
 	nboots=50,
 )
 
@@ -690,7 +697,23 @@ trimfile=./results/reads-trimmed      # path of the output file with trimmed rea
 verbose=YES                           # additional job status info during the run: YES or NO
 trace=NO                              # additional info useful to the developer team: YES or NO
 ```
- 
+
+## Reticulate evolution
+
+### SplitsTree
+
+Command File
+
+```{bash eval=FALSE}
+xvfb-run --auto-servernum --server-num=1 ~/apps/splitstree4/SplitsTree -g --commandFile cmds.txt --verbose
+```
+
+### D-statistics
+
+```{bash eval=FALSE}
+Dsuite Dtrios og-nr.vcf SETS.txt
+```
+
 ## Program Versions
 
 Below is a list of all program versions used in this analysis. **Please note** that newer versions of these software packages *may* work for this pipeline, but be aware that usage often changes with new verions. 
